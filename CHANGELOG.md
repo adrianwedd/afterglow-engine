@@ -4,32 +4,17 @@
 
 ---
 
-## v0.4 (The Machine)
-*The frame is tightened.*
+## v0.4 (The Frame)
+*Stability, not drift.*
 
-A focus on resilience. Ensuring the machine does not break when fed silence, shadows, or unexpected forms. The documentation now reflects the philosophy of the tool.
+Clouds now stay tonal even when the archive is noisy. The machine prefers the least chaotic windows, and only falls back when it must.
 
 **Technical Details:**
-*   **Safety Guards:**
-    *   Clamped swell fade lengths to actual clip duration to prevent crashes on short files.
-    *   Bounded time-stretch factors (0.1x - 4.0x) to prevent artifacts or errors.
-    *   Added pre-checks in mining to skip silent or extremely short files immediately.
-    *   Graceful degradation for granular pitch-shifting if `librosa` is missing.
-*   **Performance:**
-    *   Optimized spectral flatness calculation in `segment_miner`: now computed once per file instead of re-computed for every sliding window.
-*   **Configuration & UX:**
-    *   Added `validate_config.py` to catch invalid parameter combinations (e.g., `min_rms > max_rms`) before processing begins.
-    *   Integrated validation into the main CLI.
-    *   Improved reproducibility: `set_random_seed` now seeds both `numpy.random` and Python's `random`.
-*   **Testing:**
-    *   Added `tests/test_integration.py` for full end-to-end pipeline verification.
-    *   Added `tests/test_dsp_utils.py` for unit testing core math.
-    *   Added `pytest` to requirements.
-*   **Documentation:**
-    *   Reorganized documentation into `docs/` and `archive/`.
-    *   Added `CONTRIBUTING.md` with clear guidelines and philosophical tone.
-    *   Aligned agent contexts (`GEMINI.md`, `CLAUDE.md`, `AGENTS.md`) with the project's "sonic archaeology" metaphor.
-    *   Added ASCII art logo to `README.md`.
+*   **Stable Regions, Keyed:** Stability masks cache per-threshold set; different onset/RMS/centroid gates recompute correctly.
+*   **Quality-Aware Fallback:** When no windows pass the strict mask, grains come from the top ~20% lowest-onset windows that also pass RMS/DC/crest gates; grain offsets/lengths are clamped to window bounds.
+*   **Safer Clouds:** Guarded fades on final clouds; resample-based pitch shift stays within reasonable rates.
+*   **Defaults & Validation:** Relaxed pre-analysis defaults (usable out-of-box); validation now checks analysis window/hop and overlap ratios.
+*   **Tests:** Added analyzer cache/fallback/fade tests; integration updated to find hiss exports.
 
 ---
 

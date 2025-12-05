@@ -112,6 +112,13 @@ python make_textures.py --all
 - **Hiss/air layers**: hiss loops and flickers with band-pass/high-pass and tremolo options.
 - **Reproducibility & logging**: set `reproducibility.random_seed` for deterministic runs; enable verbose pre-analysis logs via `dsp_utils.set_verbose(True)` (default is quiet).
 
+## What’s New in v0.4 (Stability & Fallback)
+
+- **Quality-aware fallback**: If no windows pass strict stability thresholds, clouds pull grains from the least-onset windows that still pass RMS/DC/crest gates—no more percussive “accidents” when sources are lively.
+- **Keyed stability masks**: Stability caching now tracks threshold sets, so changing onset/RMS/centroid gates always recomputes masks.
+- **Safer clouds**: Grain offsets are clamped to window bounds; final clouds get guarded fades to avoid edge clicks; tape-style pitch shift keeps rates in a sane range.
+- **Defaults & validation**: Relaxed pre-analysis defaults for usable out-of-box results; config validation now checks analysis window/hop and overlap ratios. New tests cover analyzer caching, fallback sorting, and fade guards.
+
 ## Where Everything Lives
 
 - **Source & scripts**: code and configs live here in the root (`musiclib/`, `make_textures.py`, `config.yaml`).
