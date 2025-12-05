@@ -5,7 +5,7 @@ Drone/pad/swell maker: generate pad loops and swells with processing variants.
 from typing import List, Tuple
 import numpy as np
 import librosa
-from . import io_utils, dsp_utils
+from . import io_utils, dsp_utils, music_theory
 
 
 def process_pad_source(

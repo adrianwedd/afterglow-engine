@@ -69,6 +69,23 @@ def validate_config(config: dict) -> None:
     if not isinstance(thresh.get("max_crest_factor", 1.0), (int, float)) or thresh.get("max_crest_factor", 1.0) <= 0:
         errors.append("curation.thresholds.max_crest_factor must be a positive number")
 
+    # Musicality
+    musicality = config.get("musicality", {})
+    ref_bpm = musicality.get("reference_bpm")
+    if ref_bpm not in (None, "detect"):
+        try:
+            val = float(ref_bpm)
+            if val <= 0:
+                errors.append("musicality.reference_bpm must be > 0 or 'detect'")
+        except Exception:
+            errors.append("musicality.reference_bpm must be a number or 'detect'")
+    bars = musicality.get("bar_lengths", [])
+    if bars and any((not isinstance(b, (int, float)) or b <= 0) for b in bars):
+        errors.append("musicality.bar_lengths must be positive numbers")
+    snap = musicality.get("snap_to_grid")
+    if snap not in (None, True, False):
+        errors.append("musicality.snap_to_grid must be true/false")
+
     if errors:
         for e in errors:
             print(f"[config] {e}", file=sys.stderr)

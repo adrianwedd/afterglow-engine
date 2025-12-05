@@ -126,3 +126,10 @@ curation:
     min_rms_db: -60.0
     clipping_tolerance: 0.01
     max_crest_factor: 25.0
+
+# Musical awareness
+musicality:
+  reference_bpm: "detect"   # "detect" or number, e.g., 120
+  snap_to_grid: false
+  bar_lengths: [1, 2, 4]
+  target_key: null          # e.g., "C maj" or "A min"; null to keep detected

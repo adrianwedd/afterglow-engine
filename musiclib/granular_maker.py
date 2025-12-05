@@ -18,6 +18,7 @@ import numpy as np
 import librosa
 from scipy import signal
 from . import io_utils, dsp_utils, audio_analyzer
+from . import music_theory
 
 
 # ============================================================================
@@ -524,6 +525,7 @@ def make_clouds_from_source(
     """
     cloud_config = config['clouds']
     peak_dbfs = config['global']['target_peak_dbfs']
+    musicality = config.get("musicality", {})
 
     # Brightness tagging
     brightness_config = config.get('brightness_tags', {})
@@ -549,6 +551,27 @@ def make_clouds_from_source(
     clouds_per_source = cloud_config.get('clouds_per_source', 2)
     results = []
 
+    # Optional BPM detection/context for bar-based duration
+    bpm_context = None
+    if musicality.get("reference_bpm") not in (None, "detect"):
+        try:
+            bpm_context = float(musicality["reference_bpm"])
+        except Exception:
+            bpm_context = None
+    elif musicality.get("reference_bpm") == "detect":
+        bpm_context, conf = music_theory.detect_bpm(audio, sr)
+        if conf < 0.2:  # low confidence -> ignore
+            bpm_context = None
+
+    # Helper: bars to seconds if snapping
+    def bars_to_seconds(bars: float) -> float:
+        if not musicality.get("snap_to_grid") or bpm_context is None:
+            return cloud_config['cloud_duration_sec']
+        return float(bars) * 240.0 / bpm_context  # bars * (60*4)/bpm
+
+    target_bars = musicality.get("bar_lengths", [])
+    target_duration_sec = bars_to_seconds(target_bars[0]) if target_bars else cloud_config['cloud_duration_sec']
+
     for i in range(clouds_per_source):
         cloud = create_cloud(
             audio,
@@ -556,7 +579,7 @@ def make_clouds_from_source(
             grain_length_min_ms=cloud_config['grain_length_min_ms'],
             grain_length_max_ms=cloud_config['grain_length_max_ms'],
             num_grains=cloud_config['grains_per_cloud'],
-            cloud_duration_sec=cloud_config['cloud_duration_sec'],
+            cloud_duration_sec=target_duration_sec,
             pitch_shift_min=pitch_min,
             pitch_shift_max=pitch_max,
             overlap_ratio=cloud_config['overlap_ratio'],
