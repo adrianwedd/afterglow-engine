@@ -49,6 +49,27 @@ drones:
   enable_reversal: true
 
 # ENHANCED CLOUDS: Better source selection + more variations
+# Audio pre-analysis and quality filtering (v0.3)
+pre_analysis:
+  enabled: true                         # Enable per-file quality analysis
+  analysis_window_sec: 1.0              # Analysis window size (seconds)
+  analysis_hop_sec: 0.5                 # Analysis hop size (seconds)
+
+  # Stability filters (identify usable regions)
+  # Tonal/Textural Bias: Stricter settings to avoid percussion
+  max_onset_rate_hz: 1.0                # Strict: <1 onset/sec (avoid drums)
+  min_rms_db: -35.0                     # Avoid silence/noise floor
+  max_rms_db: -15.0                     # Avoid loud/transient peaks
+  max_dc_offset: 0.05                   # Strict DC check
+  max_crest_factor: 8.0                 # Strict: reject sharp transients
+
+  # Quality scoring for grains
+  grain_quality_threshold: 0.6          # Higher bar for grain acceptance
+  min_stable_windows: 3                 # Require 1.5s of stability (3 * 0.5s)
+  skip_clipped_regions: true            # Avoid regions with clipping
+  skip_transient_regions: true          # Avoid percussive regions
+
+# Granular cloud settings
 clouds:
   # Slightly shorter grains for better clarity
   grain_length_min_ms: 40                       # Shorter min
@@ -62,11 +83,11 @@ clouds:
 
   # Wider pitch range for more extreme variation
   pitch_shift_range:
-    min: -12                                    # Lower bound (was -8)
-    max: 12                                     # Upper bound (was 8)
+    min: -5                                     # Tighter range (was -12)
+    max: 5                                      # Tighter range (was 12)
 
   overlap_ratio: 0.7                            # Slightly more overlap for legato
-  lowpass_hz: 10000                             # Less aggressive filtering
+  lowpass_hz: 7000                              # Softer high-end (was 10000)
   clouds_per_source: 4                          # More clouds (was 2)
 
 # ENHANCED HISS: More options

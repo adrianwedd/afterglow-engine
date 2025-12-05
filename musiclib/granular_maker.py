@@ -120,6 +120,9 @@ def extract_grains(
     max_rms_db: float = -10.0,
     max_dc_offset: float = 0.1,
     max_crest_factor: float = 10.0,
+    min_stable_windows: int = 2,
+    centroid_low_hz: float = None,
+    centroid_high_hz: float = None,
 ) -> List[np.ndarray]:
     """
     Extract grains from audio with optional quality filtering.
@@ -144,6 +147,9 @@ def extract_grains(
         max_rms_db: Maximum RMS level (dB) to accept
         max_dc_offset: Maximum DC offset to accept
         max_crest_factor: Maximum peak/RMS ratio to accept
+        min_stable_windows: Minimum consecutive stable windows required
+        centroid_low_hz: Min spectral centroid (Hz) for stable regions
+        centroid_high_hz: Max spectral centroid (Hz) for stable regions
 
     Returns:
         List of windowed grain audio arrays
@@ -175,9 +181,12 @@ def extract_grains(
             rms_high_db=max_rms_db,
             max_dc_offset=max_dc_offset,
             max_crest=max_crest_factor,
+            centroid_low_hz=centroid_low_hz,
+            centroid_high_hz=centroid_high_hz,
         )
         num_stable = np.sum(stable_mask) if stable_mask is not None else 0
-        dsp_utils.vprint(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}], DC={max_dc_offset}, crest={max_crest_factor})")
+        centroid_msg = f", centroid=[{centroid_low_hz},{centroid_high_hz}]" if (centroid_low_hz or centroid_high_hz) else ""
+        dsp_utils.vprint(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}] dB, DC={max_dc_offset}, crest={max_crest_factor}, consecutive={min_stable_windows}{centroid_msg})")
 
     # Extract grains with optional quality filtering
     attempts = 0
@@ -193,7 +202,9 @@ def extract_grains(
         if use_quality_filter and stable_mask is not None and np.any(stable_mask):
             # Sample from stable regions
             result = analyzer.sample_from_stable_region(
-                grain_length / sr, stable_mask=stable_mask
+                grain_length / sr, 
+                stable_mask=stable_mask,
+                min_stable_windows=min_stable_windows,
             )
             if result is not None:
                 start, _ = result
@@ -227,28 +238,23 @@ def apply_pitch_shift_grain(
     sr: int,
     min_shift_semitones: float,
     max_shift_semitones: float,
-    min_grain_length_samples: int = 256,
 ) -> np.ndarray:
     """
-    Apply random pitch shift to a grain within a range.
+    Apply random pitch shift to a grain using resampling (tape speed effect).
 
-    Skips pitch-shifting for very short grains to avoid STFT artifacts.
+    This changes both pitch and duration, avoiding phase vocoder artifacts
+    on short grains.
 
     Args:
         grain: Input grain
         sr: Sample rate
-        min_shift_semitones: Minimum pitch shift (negative = lower)
-        max_shift_semitones: Maximum pitch shift (positive = higher)
-        min_grain_length_samples: Skip pitch-shift if grain shorter than this (default: 256)
+        min_shift_semitones: Minimum pitch shift
+        max_shift_semitones: Maximum pitch shift
 
     Returns:
-        Pitch-shifted grain (or original if too short or no shift requested)
+        Resampled (pitch-shifted) grain
     """
     if min_shift_semitones == 0 and max_shift_semitones == 0:
-        return grain
-
-    # Skip pitch-shift for very short grains to avoid STFT artifacts
-    if len(grain) < min_grain_length_samples:
         return grain
 
     shift = np.random.uniform(min_shift_semitones, max_shift_semitones)
@@ -259,17 +265,19 @@ def apply_pitch_shift_grain(
     if librosa is None:
         return grain
 
-    # Adaptive n_fft: clamp to grain length to avoid "n_fft too large" warnings
-    # Also set hop_length explicitly based on actual n_fft
-    n_fft = min(len(grain), 2048)
-    hop_length = max(64, n_fft // 4)
+    # Calculate resampling rate
+    # rate > 1.0 = pitch up (shorter)
+    # rate < 1.0 = pitch down (longer)
+    rate = 2.0 ** (shift / 12.0)
 
     try:
-        return librosa.effects.pitch_shift(
-            grain, sr=sr, n_steps=shift, n_fft=n_fft, hop_length=hop_length
-        )
+        # We want to change the speed.
+        # Pitch UP (rate=2): We want half the samples. target_sr = sr / 2?
+        # Resample from 44k to 22k gives half samples.
+        # Pitch DOWN (rate=0.5): We want double samples. target_sr = sr / 0.5 = 88k.
+        # Resample from 44k to 88k gives double samples.
+        return librosa.resample(grain, orig_sr=sr, target_sr=sr / rate)
     except Exception:
-        # Fallback if pitch shift fails (e.g., too short grain)
         return grain
 
 
@@ -323,6 +331,9 @@ def create_cloud(
     max_onset_rate = pre_analysis_config.get('max_onset_rate_hz', 3.0)
     min_rms_db = pre_analysis_config.get('min_rms_db', -40.0)
     max_rms_db = pre_analysis_config.get('max_rms_db', -10.0)
+    min_stable_windows = pre_analysis_config.get('min_stable_windows', 2)
+    centroid_low = pre_analysis_config.get('centroid_low_hz')
+    centroid_high = pre_analysis_config.get('centroid_high_hz')
 
     # Create analyzer only if enabled
     analyzer = None
@@ -347,6 +358,9 @@ def create_cloud(
         max_rms_db=max_rms_db,
         max_dc_offset=max_dc_offset,
         max_crest_factor=max_crest,
+        min_stable_windows=min_stable_windows,
+        centroid_low_hz=centroid_low,
+        centroid_high_hz=centroid_high,
     )
 
     if not grains:
@@ -361,11 +375,14 @@ def create_cloud(
             analyzer=None,
         )
 
-    # Apply pitch shifts
+    # Apply pitch shifts (resampling)
     grains = [
         apply_pitch_shift_grain(g, sr, pitch_shift_min, pitch_shift_max)
         for g in grains
     ]
+
+    # Shuffle grains to avoid temporal linearity
+    np.random.shuffle(grains)
 
     # Create output buffer
     cloud_samples = int(cloud_duration_sec * sr)

@@ -166,6 +166,8 @@ class AudioAnalyzer:
         rms_high_db: float = -10.0,
         max_dc_offset: float = 0.1,
         max_crest: float = 10.0,
+        centroid_low_hz: float = None,
+        centroid_high_hz: float = None,
     ) -> np.ndarray:
         """
         Identify stable, high-quality regions in audio.
@@ -175,6 +177,7 @@ class AudioAnalyzer:
         - RMS in mid-range (not silent, not clipped)
         - Low DC offset (no bias)
         - Reasonable crest factor (not heavily clipped)
+        - (Optional) Spectral centroid within tonal range
 
         Args:
             max_onset_rate: Max onsets per second to accept
@@ -182,11 +185,16 @@ class AudioAnalyzer:
             rms_high_db: Max RMS (dB) to accept
             max_dc_offset: Max absolute DC offset
             max_crest: Max crest factor
+            centroid_low_hz: Min spectral centroid (Hz)
+            centroid_high_hz: Max spectral centroid (Hz)
 
         Returns:
             Boolean mask (length = number of windows) indicating stable regions
         """
         if self._stability_mask is not None:
+            # Note: caching prevents re-running with different thresholds on the same instance.
+            # If different thresholds are needed, a new analyzer should be created or logic updated.
+            # For now, we assume one set of thresholds per file processing pass.
             return self._stability_mask
 
         # Get all metrics
@@ -206,6 +214,14 @@ class AudioAnalyzer:
 
         # Filter by crest factor
         mask &= crest < max_crest
+
+        # Filter by spectral centroid (optional tonal gate)
+        if centroid_low_hz is not None or centroid_high_hz is not None:
+            centroid = self._compute_spectral_centroid()
+            if centroid_low_hz is not None:
+                mask &= (centroid >= centroid_low_hz)
+            if centroid_high_hz is not None:
+                mask &= (centroid <= centroid_high_hz)
 
         # Filter by onset density
         for i, start in enumerate(
