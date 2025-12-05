@@ -191,8 +191,21 @@ class AudioAnalyzer:
         Returns:
             Boolean mask (length = number of windows) indicating stable regions
         """
-        # Note: We do NOT cache self._stability_mask anymore because thresholds can change per call.
-        # Recomputing the boolean mask is fast (vectorized) compared to the pre-computations.
+        cache_key = (
+            max_onset_rate,
+            rms_low_db,
+            rms_high_db,
+            max_dc_offset,
+            max_crest,
+            centroid_low_hz,
+            centroid_high_hz,
+            self.window_size_sec,
+            self.hop_sec,
+        )
+        if isinstance(self._stability_mask, dict) and cache_key in self._stability_mask:
+            return self._stability_mask[cache_key]
+        if self._stability_mask is None:
+            self._stability_mask = {}
 
         # Get all metrics
         rms = self._compute_rms_curve()
@@ -230,27 +243,58 @@ class AudioAnalyzer:
             if onset_rate > max_onset_rate:
                 mask[i] = False
 
-        self._stability_mask = mask
-        return mask
+        self._stability_mask[cache_key] = mask
+        return self._stability_mask[cache_key]
 
-    def get_sorted_windows(self) -> np.ndarray:
+    def get_sorted_windows(
+        self,
+        rms_low_db: float = -40.0,
+        rms_high_db: float = -10.0,
+        max_dc_offset: float = 0.1,
+        max_crest: float = 10.0,
+        centroid_low_hz: float = None,
+        centroid_high_hz: float = None,
+    ) -> np.ndarray:
         """
         Return window indices sorted by stability (most stable first).
         
         Primary ranking metric: Onset density (ascending).
         Secondary ranking metric: RMS energy (distance from -24dB ideal).
 
+        Windows failing RMS/DC/crest/centroid gates are excluded first. If that
+        yields no candidates, all windows are considered.
+
         Returns:
             Array of window indices.
         """
         onset_frames = self._compute_onset_density()
         rms = self._compute_rms_curve()
+        dc = self._compute_dc_offset()
+        crest = self._compute_crest_factor()
+        centroid = None
+        if centroid_low_hz is not None or centroid_high_hz is not None:
+            centroid = self._compute_spectral_centroid()
         
         window_onset_counts = []
         window_rms_scores = []
+        keep_mask = []
         
         for i, start in enumerate(range(0, len(self.audio) - self.window_size_samples + 1, self.hop_samples)):
             end = start + self.window_size_samples
+
+            keep = True
+            if not (rms_low_db <= rms[i] <= rms_high_db):
+                keep = False
+            if dc[i] >= max_dc_offset:
+                keep = False
+            if crest[i] >= max_crest:
+                keep = False
+            if centroid is not None:
+                if centroid_low_hz is not None and centroid[i] < centroid_low_hz:
+                    keep = False
+                if centroid_high_hz is not None and centroid[i] > centroid_high_hz:
+                    keep = False
+            keep_mask.append(keep)
             
             # Onset count
             count = np.sum((onset_frames >= start) & (onset_frames < end))
@@ -261,9 +305,17 @@ class AudioAnalyzer:
             dist = abs(rms[i] - (-24.0))
             window_rms_scores.append(dist)
             
+        keep_mask = np.array(keep_mask, dtype=bool)
+        if not np.any(keep_mask):
+            keep_mask = np.ones_like(keep_mask, dtype=bool)
+
+        window_onset_counts = np.array(window_onset_counts)
+        window_rms_scores = np.array(window_rms_scores)
+
         # Lexical sort: primary=onsets (ascending), secondary=rms_dist (ascending)
         # np.lexsort sorts by last key first, so we pass (rms, onsets)
-        return np.lexsort((window_rms_scores, window_onset_counts))
+        sorted_indices = np.lexsort((window_rms_scores, window_onset_counts))
+        return sorted_indices[keep_mask[sorted_indices]]
 
     def get_sample_range_for_window(self, window_idx: int) -> Tuple[int, int]:
         """

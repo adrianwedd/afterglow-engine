@@ -56,16 +56,16 @@ pre_analysis:
   analysis_hop_sec: 0.5                 # Analysis hop size (seconds)
 
   # Stability filters (identify usable regions)
-  # Tonal/Textural Bias: Stricter settings to avoid percussion
-  max_onset_rate_hz: 1.0                # Strict: <1 onset/sec (avoid drums)
-  min_rms_db: -35.0                     # Avoid silence/noise floor
-  max_rms_db: -15.0                     # Avoid loud/transient peaks
-  max_dc_offset: 0.05                   # Strict DC check
-  max_crest_factor: 8.0                 # Strict: reject sharp transients
+  # Tonal/Textural Bias: defaults are lenient enough to find usable regions in mixed material
+  max_onset_rate_hz: 5.0                # Allow some movement; tighten for drums
+  min_rms_db: -45.0                     # Allow quieter beds
+  max_rms_db: -10.0                     # Avoid loud/transient peaks
+  max_dc_offset: 0.05                   # DC check
+  max_crest_factor: 12.0                # Reject sharp transients while keeping musical peaks
 
   # Quality scoring for grains
   grain_quality_threshold: 0.6          # Higher bar for grain acceptance
-  min_stable_windows: 3                 # Require 1.5s of stability (3 * 0.5s)
+  min_stable_windows: 2                 # Require at least 1s of stability (2 * 0.5s)
   skip_clipped_regions: true            # Avoid regions with clipping
   skip_transient_regions: true          # Avoid percussive regions
 

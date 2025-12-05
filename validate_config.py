@@ -34,6 +34,23 @@ def validate_config(config: dict) -> None:
     pre_max_rms = pre.get("max_rms_db")
     if pre_min_rms is not None and pre_max_rms is not None and pre_min_rms > pre_max_rms:
         errors.append("pre_analysis.min_rms_db cannot exceed max_rms_db")
+    if pre.get("analysis_window_sec") is not None and pre.get("analysis_window_sec") <= 0:
+        errors.append("pre_analysis.analysis_window_sec must be > 0")
+    if pre.get("analysis_hop_sec") is not None and pre.get("analysis_hop_sec") <= 0:
+        errors.append("pre_analysis.analysis_hop_sec must be > 0")
+    # Pre-analysis: stable windows
+    min_stable = pre.get("min_stable_windows")
+    if min_stable is not None and (not isinstance(min_stable, int) or min_stable <= 0):
+        errors.append("pre_analysis.min_stable_windows must be a positive integer")
+    # Pre-analysis: centroid gating
+    cent_low = pre.get("centroid_low_hz")
+    cent_high = pre.get("centroid_high_hz")
+    if cent_low is not None and cent_high is not None and cent_low > cent_high:
+        errors.append("pre_analysis.centroid_low_hz cannot exceed centroid_high_hz")
+    # Overlap ratio sanity
+    overlap = config.get("clouds", {}).get("overlap_ratio")
+    if overlap is not None and not (0 < overlap < 1):
+        errors.append("clouds.overlap_ratio must be between 0 and 1 (exclusive)")
 
     # Bit depth
     bit_depth = config.get("global", {}).get("output_bit_depth")

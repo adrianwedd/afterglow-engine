@@ -187,6 +187,8 @@ def extract_grains(
         num_stable = np.sum(stable_mask) if stable_mask is not None else 0
         centroid_msg = f", centroid=[{centroid_low_hz},{centroid_high_hz}]" if (centroid_low_hz or centroid_high_hz) else ""
         dsp_utils.vprint(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}] dB, DC={max_dc_offset}, crest={max_crest_factor}, consecutive={min_stable_windows}{centroid_msg})")
+        if num_stable == 0:
+            print(f"      [fallback] 0/{len(stable_mask)} windows stable; using least-onset fallback")
 
     # Extract grains with optional quality filtering
     attempts = 0
@@ -210,27 +212,46 @@ def extract_grains(
                 start, _ = result
             else:
                 # Fallback: if strict sampling failed (e.g. runs too short), try soft fallback
-                sorted_windows = analyzer.get_sorted_windows()
+                sorted_windows = analyzer.get_sorted_windows(
+                    rms_low_db=min_rms_db,
+                    rms_high_db=max_rms_db,
+                    max_dc_offset=max_dc_offset,
+                    max_crest=max_crest_factor,
+                    centroid_low_hz=centroid_low_hz,
+                    centroid_high_hz=centroid_high_hz,
+                )
                 if len(sorted_windows) > 0:
                     top_n = max(1, len(sorted_windows) // 5) # Top 20%
                     best_windows = sorted_windows[:top_n]
                     window_idx = np.random.choice(best_windows)
-                    start, _ = analyzer.get_sample_range_for_window(window_idx)
-                    # Add small random offset within the window
-                    offset = np.random.randint(0, max(1, int(analyzer.hop_sec * sr)))
+                    start, window_end = analyzer.get_sample_range_for_window(window_idx)
+                    max_len = window_end - start
+                    grain_length = min(grain_length, max_len)
+                    # Add small random offset within the window while preserving length
+                    max_offset = max(0, max_len - grain_length)
+                    offset = np.random.randint(0, max(1, max_offset + 1))
                     start = min(start + offset, len(audio) - grain_length)
                 else:
                     start = np.random.randint(0, max(1, max_start - grain_length + 1))
         elif use_quality_filter and analyzer is not None:
             # Soft fallback: if mask was empty, pick from top 20% "best" windows
-            sorted_windows = analyzer.get_sorted_windows()
+            sorted_windows = analyzer.get_sorted_windows(
+                rms_low_db=min_rms_db,
+                rms_high_db=max_rms_db,
+                max_dc_offset=max_dc_offset,
+                max_crest=max_crest_factor,
+                centroid_low_hz=centroid_low_hz,
+                centroid_high_hz=centroid_high_hz,
+            )
             if len(sorted_windows) > 0:
                 top_n = max(1, len(sorted_windows) // 5) # Top 20%
                 best_windows = sorted_windows[:top_n]
                 window_idx = np.random.choice(best_windows)
-                start, _ = analyzer.get_sample_range_for_window(window_idx)
-                # Add small random offset within the window
-                offset = np.random.randint(0, max(1, int(analyzer.hop_sec * sr)))
+                start, window_end = analyzer.get_sample_range_for_window(window_idx)
+                max_len = window_end - start
+                grain_length = min(grain_length, max_len)
+                max_offset = max(0, max_len - grain_length)
+                offset = np.random.randint(0, max(1, max_offset + 1))
                 start = min(start + offset, len(audio) - grain_length)
             else:
                 start = np.random.randint(0, max(1, max_start - grain_length + 1))
@@ -440,8 +461,9 @@ def create_cloud(
     if peak > 0:
         cloud = cloud / peak * 0.95
 
-    # Apply short fade in/out to prevent clicks
-    fade_samples = int(0.01 * sr) # 10ms
+    # Apply short fade in/out to prevent clicks (guard so fades don't dominate)
+    fade_samples = int(0.01 * sr) # 10ms nominal
+    fade_samples = min(fade_samples, len(cloud) // 4)
     cloud = dsp_utils.apply_fade_in(cloud, fade_samples)
     cloud = dsp_utils.apply_fade_out(cloud, fade_samples)
 
