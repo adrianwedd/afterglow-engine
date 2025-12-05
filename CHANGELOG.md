@@ -4,6 +4,22 @@
 
 ---
 
+## v0.5 (The Curator)
+*The machine learns to judge.*
+
+The engine now audits its own work. It no longer blindly saves everything; it measures, grades, and reports.
+
+**Technical Details:**
+*   **In-Memory Analysis:** New `compute_audio_metadata` function calculates RMS, Peak, Crest Factor, Spectral Centroid, and Loop Seam Error for every generated buffer *before* saving.
+*   **Auto-Grading:**
+    *   `grade_audio` assigns a letter grade (A/B/F) based on configurable thresholds (`min_rms_db`, `clipping_tolerance`, `max_crest_factor`).
+    *   Optional `auto_delete_grade_f` to keep the output clean.
+*   **Manifest Generation:** All runs now produce a `manifest.csv` in the export folder, logging stats and grades for every file created.
+*   **Cloud Fallback:** Refined soft fallback logic for granular synthesis now logs when it happens and chooses the least-chaotic windows.
+*   **Loop Optimization:** Added `find_best_loop_trim` (cross-correlation) to automatically align loop points for minimal phase error.
+
+---
+
 ## v0.4 (The Frame)
 *Stability, not drift.*
 

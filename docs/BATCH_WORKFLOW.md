@@ -29,7 +29,7 @@ python batch_generate_textures.py --sources selected_sources.csv
 
 When complete, textures will be in:
 ```
-export/tr8s/by_source/
+export/by_source/
   ├── 01_vainqueur_solanus_extracted_2/
   │   ├── pads/
   │   ├── swells/

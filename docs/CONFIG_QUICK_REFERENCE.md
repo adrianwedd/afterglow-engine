@@ -231,6 +231,19 @@ enabled: false
 
 ---
 
+## Curation Settings
+
+```yaml
+curation:                               # ⭐ NEW: v0.5 Quality Control
+  auto_delete_grade_f: false            # Delete "Fail" textures immediately?
+  thresholds:
+    min_rms_db: -60.0                   # Silence threshold
+    clipping_tolerance: 0.01            # Peak > 0.99 = Fail
+    max_crest_factor: 25.0              # Extreme transient = Fail
+```
+
+---
+
 ## Directory Paths
 
 ```yaml
