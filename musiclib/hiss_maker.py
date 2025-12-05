@@ -337,14 +337,15 @@ def save_hiss(
     sr = config['global']['sample_rate']
     bit_depth = config['global']['output_bit_depth']
     export_dir = config['paths']['export_dir']
-    hiss_export_dir = f"{export_dir}/hiss"
-
-    io_utils.ensure_directory(hiss_export_dir)
 
     total_saved = 0
     for source_name, outputs in hiss_dict.items():
+        # Group by source name
+        target_dir = f"{export_dir}/{source_name}/hiss"
+        io_utils.ensure_directory(target_dir)
+
         for hiss_audio, filename in outputs:
-            filepath = f"{hiss_export_dir}/{filename}"
+            filepath = f"{target_dir}/{filename}"
             if io_utils.save_audio(filepath, hiss_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
                 print(f"    ✓ {filename}")

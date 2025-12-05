@@ -332,19 +332,20 @@ def save_mined_pads(
     sr = config['global']['sample_rate']
     bit_depth = config['global']['output_bit_depth']
     export_dir = config['paths']['export_dir']
-    pad_export_dir = f"{export_dir}/pads"
-
-    io_utils.ensure_directory(pad_export_dir)
 
     total_saved = 0
     for source_name, pads_with_tags in pad_dict.items():
+        # Group by source name
+        target_dir = f"{export_dir}/{source_name}/pads"
+        io_utils.ensure_directory(target_dir)
+
         for i, (pad_audio, brightness_tag) in enumerate(pads_with_tags, 1):
             # Build filename with optional brightness tag
             if brightness_tag:
                 filename = f"{source_name}_pad{i:02d}_{brightness_tag}.wav"
             else:
                 filename = f"{source_name}_pad{i:02d}.wav"
-            filepath = f"{pad_export_dir}/{filename}"
+            filepath = f"{target_dir}/{filename}"
             if io_utils.save_audio(filepath, pad_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
                 print(f"    ✓ {filename}")

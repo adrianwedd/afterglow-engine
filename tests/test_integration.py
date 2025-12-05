@@ -51,30 +51,46 @@ def test_full_pipeline_integration(tmp_path):
     
     # 1. Run Pad Miner
     run_mine_pads(config)
-    pads_export = export_dir / "pads"
-    assert pads_export.exists()
+    # Pads should be under export/test_src/pads/
+    src_pads_export = export_dir / "test_src" / "pads"
+    assert src_pads_export.exists()
     # Should find at least one pad from the 3s sine wave
-    assert len(list(pads_export.glob("*.wav"))) > 0
+    assert len(list(src_pads_export.glob("*.wav"))) > 0
 
     # 2. Run Drone Maker
-    # Drone maker reads from pad_sources_dir
+    # Drone maker reads from pad_sources_dir (test_pad.wav)
     run_make_drones(config)
-    swells_export = export_dir / "swells"
-    assert pads_export.exists() # Drones also write to pads dir
-    assert swells_export.exists()
-    # Should generate loops and swells
-    assert len(list(swells_export.glob("*.wav"))) > 0
+    # Drones should be under export/test_pad/pads and export/test_pad/swells
+    pad_drones_export = export_dir / "test_pad" / "pads"
+    swell_drones_export = export_dir / "test_pad" / "swells"
+    
+    assert pad_drones_export.exists()
+    assert swell_drones_export.exists()
+    assert len(list(pad_drones_export.glob("*.wav"))) > 0
+    assert len(list(swell_drones_export.glob("*.wav"))) > 0
 
     # 3. Run Cloud Maker
-    # Cloud maker reads from pad_sources_dir
+    # Cloud maker reads from pad_sources_dir (test_pad.wav)
     run_make_clouds(config)
-    clouds_export = export_dir / "clouds"
-    assert clouds_export.exists()
-    assert len(list(clouds_export.glob("*.wav"))) > 0
+    cloud_export = export_dir / "test_pad" / "clouds"
+    assert cloud_export.exists()
+    assert len(list(cloud_export.glob("*.wav"))) > 0
 
     # 4. Run Hiss Maker
-    # Hiss maker reads from drums_dir and uses synthetic noise
+    # Hiss maker reads from drums_dir (test_drum.wav) AND synthetic noise
     run_make_hiss(config)
-    hiss_export = export_dir / "hiss"
-    assert hiss_export.exists()
-    assert len(list(hiss_export.glob("*.wav"))) > 0
+    
+    # Check drum-based hiss
+    drum_hiss_export = export_dir / "test_drum" / "hiss"
+    assert drum_hiss_export.exists()
+    assert len(list(drum_hiss_export.glob("*.wav"))) > 0
+    
+    # Check synthetic hiss (special "synthetic" source folder if using synthetic noise)
+    # Note: The synthetic generation doesn't use a specific source name in the file list, 
+    # but let's see where it saves. Hiss maker usually returns "synthetic" as key for synthetic noise.
+    # Let's check if a 'synthetic' folder exists or if it falls back to a default.
+    # Based on previous code, it returns {"synthetic": outputs}
+    synthetic_hiss_export = export_dir / "synthetic" / "hiss"
+    if config['hiss']['use_synthetic_noise']:
+         assert synthetic_hiss_export.exists()
+         assert len(list(synthetic_hiss_export.glob("*.wav"))) > 0

@@ -342,25 +342,24 @@ def save_drone_outputs(
     bit_depth = config['global']['output_bit_depth']
     export_dir = config['paths']['export_dir']
 
-    pad_export_dir = f"{export_dir}/pads"
-    swell_export_dir = f"{export_dir}/swells"
-
-    io_utils.ensure_directory(pad_export_dir)
-    io_utils.ensure_directory(swell_export_dir)
-
     pads_saved = 0
     swells_saved = 0
 
     for source_name, outputs in drone_dict.items():
+        # Group by source name
+        pad_export_dir = f"{export_dir}/{source_name}/pads"
+        swell_export_dir = f"{export_dir}/{source_name}/swells"
+        
+        io_utils.ensure_directory(pad_export_dir)
+        io_utils.ensure_directory(swell_export_dir)
+
         for audio, filename in outputs:
             if 'swell' in filename:
                 filepath = f"{swell_export_dir}/{filename}"
-                export_type = "swell"
                 if io_utils.save_audio(filepath, audio, sr=sr, bit_depth=bit_depth):
                     swells_saved += 1
             else:
                 filepath = f"{pad_export_dir}/{filename}"
-                export_type = "pad"
                 if io_utils.save_audio(filepath, audio, sr=sr, bit_depth=bit_depth):
                     pads_saved += 1
             print(f"    ✓ {filename}")

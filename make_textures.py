@@ -32,7 +32,7 @@ paths:
   source_audio_dir: source_audio
   pad_sources_dir: pad_sources
   drums_dir: drums
-  export_dir: export/tr8s
+  export_dir: export
 
 # Pad miner settings (sustained segment extraction)
 pad_miner:
@@ -157,10 +157,6 @@ def ensure_directories(config: dict) -> None:
         config['paths']['pad_sources_dir'],
         config['paths']['drums_dir'],
         config['paths']['export_dir'],
-        f"{config['paths']['export_dir']}/pads",
-        f"{config['paths']['export_dir']}/swells",
-        f"{config['paths']['export_dir']}/clouds",
-        f"{config['paths']['export_dir']}/hiss",
     ]
 
     for directory in dirs_to_create:
@@ -172,7 +168,7 @@ def run_mine_pads(config: dict) -> None:
     pad_dict = segment_miner.mine_all_pads(config)
     if pad_dict:
         total = segment_miner.save_mined_pads(pad_dict, config)
-        print(f"\n[✓] Saved {total} pad(s) to {config['paths']['export_dir']}/pads/")
+        print(f"\n[✓] Saved {total} pad(s) to {config['paths']['export_dir']}/")
     else:
         print(f"\n[!] No pads mined (check {config['paths']['source_audio_dir']})")
 
@@ -192,7 +188,7 @@ def run_make_clouds(config: dict) -> None:
     clouds_dict = granular_maker.process_cloud_sources(config)
     if clouds_dict:
         total = granular_maker.save_clouds(clouds_dict, config)
-        print(f"\n[✓] Saved {total} cloud(s) to {config['paths']['export_dir']}/clouds/")
+        print(f"\n[✓] Saved {total} cloud(s) to {config['paths']['export_dir']}/")
     else:
         print(f"\n[!] No clouds generated (check {config['paths']['pad_sources_dir']})")
 
@@ -202,7 +198,7 @@ def run_make_hiss(config: dict) -> None:
     hiss_dict = hiss_maker.make_all_hiss(config)
     if hiss_dict:
         total = hiss_maker.save_hiss(hiss_dict, config)
-        print(f"\n[✓] Saved {total} hiss audio file(s) to {config['paths']['export_dir']}/hiss/")
+        print(f"\n[✓] Saved {total} hiss audio file(s) to {config['paths']['export_dir']}/")
     else:
         print(f"\n[!] No hiss textures generated")
 

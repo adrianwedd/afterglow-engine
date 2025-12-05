@@ -569,12 +569,13 @@ def save_clouds(
     sr = config['global']['sample_rate']
     bit_depth = config['global']['output_bit_depth']
     export_dir = config['paths']['export_dir']
-    cloud_export_dir = f"{export_dir}/clouds"
-
-    io_utils.ensure_directory(cloud_export_dir)
 
     total_saved = 0
     for source_name, clouds_data in clouds_dict.items():
+        # Group by source name
+        target_dir = f"{export_dir}/{source_name}/clouds"
+        io_utils.ensure_directory(target_dir)
+
         for cloud_audio, brightness_tag, filename in clouds_data:
             # Build filename with optional brightness tag
             if brightness_tag:
@@ -582,7 +583,7 @@ def save_clouds(
                 filename_with_tag = f"{base_filename}_{brightness_tag}.wav"
             else:
                 filename_with_tag = filename
-            filepath = f"{cloud_export_dir}/{filename_with_tag}"
+            filepath = f"{target_dir}/{filename_with_tag}"
             if io_utils.save_audio(filepath, cloud_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
                 print(f"    ✓ {filename_with_tag}")
