@@ -40,6 +40,11 @@ def process_pad_source(
     # Time stretches
     for factor in time_stretches:
         if factor != 1.0:
+            # Guard against invalid or extreme stretch factors
+            if factor <= 0:
+                continue
+            if factor > 4.0:
+                factor = 4.0
             stretched = librosa.effects.time_stretch(audio, rate=factor)
             results.append((stretched, f"stretch_{factor:.1f}x"))
 
@@ -197,6 +202,15 @@ def make_swells(
     # Apply fade in/out envelope
     fade_in_samples = int(drone_config['fade_in_sec'] * sr)
     fade_out_samples = int(drone_config['fade_out_sec'] * sr)
+
+    # Clamp fades so they do not exceed the clip length
+    max_fade = len(swell) // 2
+    if fade_in_samples > max_fade:
+        fade_in_samples = max_fade
+    if fade_out_samples > max_fade:
+        fade_out_samples = max_fade
+    if fade_in_samples + fade_out_samples > len(swell):
+        fade_out_samples = max(0, len(swell) - fade_in_samples)
 
     swell = dsp_utils.apply_fade_in(swell, fade_in_samples)
     swell = dsp_utils.apply_fade_out(swell, fade_out_samples)

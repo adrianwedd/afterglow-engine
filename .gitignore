@@ -70,3 +70,7 @@ CLAUDE.md
 venv/
 venv311/
 musiclib/granular_maker_orig.py
+.DS_Store
+.vscode/
+.claude/
+.git-help

@@ -95,6 +95,12 @@ def extract_sustained_segments(
     onset_frames = librosa.onset.onset_detect(
         onset_envelope=onset_strength, sr=sr, units='samples'
     )
+    # Precompute spectral flatness across the file to avoid per-window recompute
+    try:
+        S = librosa.stft(y=audio)
+        flatness_frames = librosa.feature.spectral_flatness(S=S)[0]
+    except Exception:
+        flatness_frames = None
 
     # Analyze sliding windows
     # Use pre-analysis thresholds if they were explicitly set, otherwise use pad_miner defaults
@@ -118,9 +124,16 @@ def extract_sustained_segments(
             continue
 
         # Check spectral flatness (tonality)
-        spectral_flat = librosa.feature.spectral_flatness(y=segment)
-        if np.mean(spectral_flat) > spectral_flatness_threshold:
-            continue
+        if flatness_frames is not None:
+            start_frame = librosa.samples_to_frames(start)
+            end_frame = librosa.samples_to_frames(end)
+            avg_flatness = np.mean(flatness_frames[start_frame:end_frame]) if end_frame > start_frame else np.mean(flatness_frames)
+            if avg_flatness > spectral_flatness_threshold:
+                continue
+        else:
+            spectral_flat = librosa.feature.spectral_flatness(y=segment)
+            if np.mean(spectral_flat) > spectral_flatness_threshold:
+                continue
 
         # Optional: check pre-analysis stability mask
         if use_pre_analysis and stable_mask is not None and analyzer is not None:
@@ -192,7 +205,8 @@ def mine_pads_from_file(
     sr = config['global']['sample_rate']
     audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
 
-    if audio is None:
+    if audio is None or len(audio) < sr // 10 or dsp_utils.rms_energy(audio) < 1e-6:
+        print(f"  [*] Skipping {filepath} (too short or silent)")
         return []
 
     pm_config = config['pad_miner']

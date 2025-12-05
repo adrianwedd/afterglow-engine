@@ -18,6 +18,7 @@ from pathlib import Path
 
 # Import musiclib modules
 from musiclib import segment_miner, drone_maker, granular_maker, hiss_maker, io_utils, dsp_utils
+from validate_config import validate_config
 
 
 DEFAULT_CONFIG_YAML = """# Global audio settings
@@ -262,6 +263,8 @@ Examples:
 
     # Load or create config
     config = load_or_create_config(args.config)
+    # Validate config early to catch obvious errors
+    validate_config(config)
 
     # Set random seed if specified (for reproducible results)
     reproducibility_config = config.get('reproducibility', {})
