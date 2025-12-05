@@ -99,6 +99,24 @@ hiss:
   # Synthetic noise fallback
   use_synthetic_noise: true             # Use white noise if no drum files
   synthetic_noise_level_db: -10.0       # dB level for synthetic noise
+
+# Audio pre-analysis and quality filtering (v0.3)
+pre_analysis:
+  enabled: true                         # Enable per-file quality analysis
+  analysis_window_sec: 1.0              # Analysis window size (seconds)
+  analysis_hop_sec: 0.5                 # Analysis hop size (seconds)
+
+  # Stability filters (identify usable regions)
+  max_onset_rate_hz: 3.0                # Max onsets per second (low = sustained)
+  min_rms_db: -40.0                     # Minimum RMS level
+  max_rms_db: -10.0                     # Maximum RMS level (avoid clipping)
+  max_dc_offset: 0.1                    # Max DC bias (0-1 scale)
+  max_crest_factor: 10.0                # Max peak/RMS ratio (low = sustained)
+
+  # Quality scoring for grains
+  grain_quality_threshold: 0.4          # Min quality score to accept grain
+  skip_clipped_regions: true            # Avoid regions with clipping
+  skip_transient_regions: true          # Avoid percussive regions
 """
 
 

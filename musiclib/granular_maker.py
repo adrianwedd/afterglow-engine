@@ -17,11 +17,11 @@ from typing import List, Tuple
 import numpy as np
 import librosa
 from scipy import signal
-from . import io_utils, dsp_utils
+from . import io_utils, dsp_utils, audio_analyzer
 
 
 # ============================================================================
-# GRAIN QUALITY ANALYSIS (NEW)
+# GRAIN QUALITY ANALYSIS (ENHANCED)
 # ============================================================================
 
 def analyze_grain_quality(
@@ -29,6 +29,8 @@ def analyze_grain_quality(
     sr: int,
     check_silence: bool = True,
     check_dc: bool = True,
+    check_clipping: bool = True,
+    check_skew: bool = True,
 ) -> float:
     """
     Score grain quality (0-1, higher is better).
@@ -36,43 +38,65 @@ def analyze_grain_quality(
     Penalties for:
     - Silent regions (RMS < threshold)
     - DC offset (mean >> 0)
-    - Clipping (peak near 1.0)
+    - Clipping (peak near 1.0 or extreme crest factor)
     - Extreme spectral skew
+    - High energy concentration (transient-like)
 
     Args:
         grain: Audio grain to analyze
         sr: Sample rate
         check_silence: Penalize silent grains
         check_dc: Penalize grains with DC offset
+        check_clipping: Penalize clipping and extreme crest
+        check_skew: Penalize lopsided envelopes
 
     Returns:
         Quality score (0.0 to 1.0)
     """
     score = 1.0
 
+    if len(grain) < 2:
+        return 0.1  # Too short
+
     # Check for silence
-    rms = np.sqrt(np.mean(grain ** 2))
-    if check_silence and rms < 0.01:  # Very quiet
-        score *= 0.2
+    rms = dsp_utils.rms_energy(grain)
+    if check_silence and rms < 0.005:  # Very quiet
+        score *= 0.1
+    elif check_silence and rms < 0.01:
+        score *= 0.3
 
-    # Check for DC offset
+    # Check for DC offset (bias away from zero)
     mean_abs = np.abs(np.mean(grain))
-    if check_dc and mean_abs > 0.1:  # Large DC offset
-        score *= 0.7
-
-    # Check for clipping
-    peak = np.max(np.abs(grain))
-    if peak > 0.95:
+    if check_dc and mean_abs > 0.15:  # Large DC offset
         score *= 0.5
+    elif check_dc and mean_abs > 0.08:
+        score *= 0.75
+
+    # Check for clipping and extreme crest factor
+    if check_clipping:
+        peak = np.max(np.abs(grain))
+        if peak > 0.98:  # Near-clipping
+            score *= 0.3
+        elif peak > 0.95:  # Clipping
+            score *= 0.5
+
+        # Crest factor: peak / RMS (high = transient-like, undesirable for sustained grains)
+        crest = peak / (rms + 1e-6)
+        if crest > 15.0:  # Extreme crest (very sharp transient)
+            score *= 0.4
+        elif crest > 10.0:  # High crest
+            score *= 0.6
 
     # Check for extreme skew (lopsided envelope)
-    if len(grain) > 10:
-        first_half_energy = np.sum(grain[:len(grain)//2] ** 2)
-        second_half_energy = np.sum(grain[len(grain)//2:] ** 2)
+    if check_skew and len(grain) > 10:
+        first_half_energy = np.sum(grain[: len(grain) // 2] ** 2)
+        second_half_energy = np.sum(grain[len(grain) // 2 :] ** 2)
         total_energy = first_half_energy + second_half_energy
         if total_energy > 0:
             skew = abs(first_half_energy - second_half_energy) / total_energy
-            if skew > 0.8:  # Very lopsided
+            if skew > 0.85:  # Very lopsided
+                score *= 0.3
+            elif skew > 0.7:  # Lopsided
                 score *= 0.6
 
     return max(0.0, min(1.0, score))
@@ -90,12 +114,16 @@ def extract_grains(
     sr: int,
     use_quality_filter: bool = True,
     min_quality: float = 0.4,
+    analyzer: audio_analyzer.AudioAnalyzer = None,
 ) -> List[np.ndarray]:
     """
     Extract grains from audio with optional quality filtering.
 
-    NEW: Per-grain length variation (respects min/max range).
-    NEW: Quality-filtered extraction (skips bad regions if requested).
+    Enhancements:
+    - Per-grain length variation (respects min/max range)
+    - Quality-filtered extraction (skips bad regions if requested)
+    - Pre-analysis using AudioAnalyzer to favor stable regions
+    - Avoids clipped, DC-biased, or transient-heavy regions
 
     Args:
         audio: Input audio
@@ -105,6 +133,7 @@ def extract_grains(
         sr: Sample rate
         use_quality_filter: If True, skip low-quality grains
         min_quality: Minimum quality score (0-1) to accept
+        analyzer: AudioAnalyzer instance for pre-analysis (optional)
 
     Returns:
         List of windowed grain audio arrays
@@ -127,6 +156,11 @@ def extract_grains(
             grains.append(grain)
         return grains
 
+    # Prepare stability mask if analyzer provided
+    stable_mask = None
+    if use_quality_filter and analyzer is not None:
+        stable_mask = analyzer.get_stable_regions()
+
     # Extract grains with optional quality filtering
     attempts = 0
     max_attempts = num_grains * 10 if use_quality_filter else num_grains
@@ -134,9 +168,21 @@ def extract_grains(
     while len(grains) < num_grains and attempts < max_attempts:
         attempts += 1
 
-        # Random grain length in range (NEW: per-grain variation)
+        # Random grain length in range (per-grain variation)
         grain_length = np.random.randint(grain_length_min_samples, grain_length_max_samples + 1)
-        start = np.random.randint(0, max(1, max_start - grain_length + 1))
+
+        # If we have stability mask, bias towards stable regions
+        if use_quality_filter and stable_mask is not None and np.any(stable_mask):
+            # Sample from stable regions
+            start, _ = analyzer.sample_from_stable_region(
+                grain_length / sr, stable_mask=stable_mask
+            )
+            if start == 0:
+                # Fallback to random if stable sampling fails
+                start = np.random.randint(0, max(1, max_start - grain_length + 1))
+        else:
+            start = np.random.randint(0, max(1, max_start - grain_length + 1))
+
         end = min(start + grain_length, len(audio))
         grain = audio[start:end]
 
@@ -144,7 +190,7 @@ def extract_grains(
         if len(grain) < grain_length:
             grain = np.pad(grain, (0, grain_length - len(grain)))
 
-        # Quality check (NEW)
+        # Quality check
         if use_quality_filter and analyze_grain_quality(grain, sr) < min_quality:
             continue
 
@@ -205,8 +251,11 @@ def create_cloud(
     """
     Generate a granular cloud texture from audio.
 
-    NEW: Uses improved extraction (quality filtering, per-grain length).
-    NEW: Grain placement cycles to fill buffer completely (no silence tail).
+    Enhancements:
+    - Pre-analyzes audio to identify stable, high-quality regions
+    - Uses improved extraction (quality filtering, per-grain length)
+    - Biases grain selection towards stable regions with low onset density
+    - Grain placement cycles to fill buffer completely (no silence tail)
 
     Args:
         audio: Source audio
@@ -222,7 +271,10 @@ def create_cloud(
     Returns:
         Generated cloud audio array
     """
-    # Extract grains with quality filtering
+    # Pre-analyze audio to identify stable regions
+    analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=1.0, hop_sec=0.5)
+
+    # Extract grains with quality filtering and pre-analysis
     grains = extract_grains(
         audio,
         grain_length_min_ms,
@@ -231,10 +283,11 @@ def create_cloud(
         sr,
         use_quality_filter=True,
         min_quality=0.4,
+        analyzer=analyzer,
     )
 
     if not grains:
-        # Fallback: extract without quality filter
+        # Fallback: extract without quality filter or pre-analysis
         grains = extract_grains(
             audio,
             grain_length_min_ms,
@@ -242,6 +295,7 @@ def create_cloud(
             num_grains,
             sr,
             use_quality_filter=False,
+            analyzer=None,
         )
 
     # Apply pitch shifts
@@ -260,7 +314,7 @@ def create_cloud(
     )
     hop_samples = max(1, int(grain_length_samples * (1 - overlap_ratio)))
 
-    # Place grains with cycling (NEW: cycles through grains to fill buffer)
+    # Place grains with cycling (cycles through grains to fill buffer)
     grain_idx = 0
     current_pos = 0
 

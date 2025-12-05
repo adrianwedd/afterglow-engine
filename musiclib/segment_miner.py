@@ -5,7 +5,7 @@ Pad mining: extract sustained segments from audio files.
 from typing import List, Tuple
 import numpy as np
 import librosa
-from . import io_utils, dsp_utils
+from . import io_utils, dsp_utils, audio_analyzer
 
 
 def extract_sustained_segments(
@@ -17,9 +17,15 @@ def extract_sustained_segments(
     max_onset_rate: float = 3.0,
     spectral_flatness_threshold: float = 0.5,
     window_hop_sec: float = 0.5,
+    use_pre_analysis: bool = True,
 ) -> List[Tuple[int, int]]:
     """
     Extract sustained segment candidates from audio.
+
+    Enhancements:
+    - Optional pre-analysis to favor stable regions with low DC offset & crest
+    - Gating to filter out clipped and transient-heavy regions early
+    - Spectral tonality check to prefer sustained, harmonic material
 
     Args:
         audio: Audio array
@@ -30,6 +36,7 @@ def extract_sustained_segments(
         max_onset_rate: Max onsets per second (too high = too percussive)
         spectral_flatness_threshold: Lower = more tonal (0-1 scale)
         window_hop_sec: Hop size for sliding window analysis
+        use_pre_analysis: If True, use AudioAnalyzer for pre-filtering
 
     Returns:
         List of (start_sample, end_sample) tuples for valid segments
@@ -41,6 +48,18 @@ def extract_sustained_segments(
         return []
 
     candidates = []
+
+    # Pre-analyze if requested (identifies stable regions with low DC/crest)
+    stable_mask = None
+    if use_pre_analysis:
+        analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=1.0, hop_sec=0.5)
+        stable_mask = analyzer.get_stable_regions(
+            max_onset_rate=max_onset_rate,
+            rms_low_db=min_rms_db,
+            rms_high_db=max_rms_db,
+            max_dc_offset=0.1,
+            max_crest=10.0,
+        )
 
     # Compute onset strength
     onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)
@@ -64,10 +83,18 @@ def extract_sustained_segments(
         if onset_rate > max_onset_rate:
             continue
 
-        # (Optional) Check spectral flatness (tonality)
+        # Check spectral flatness (tonality)
         spectral_flat = librosa.feature.spectral_flatness(y=segment)
         if np.mean(spectral_flat) > spectral_flatness_threshold:
             continue
+
+        # Optional: check pre-analysis stability mask
+        if use_pre_analysis and stable_mask is not None:
+            # Map segment position to analyzer windows
+            analyzer_window_idx = start // hop_samples
+            if analyzer_window_idx < len(stable_mask):
+                if not stable_mask[analyzer_window_idx]:
+                    continue
 
         candidates.append((start, end))
 
