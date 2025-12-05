@@ -59,7 +59,4 @@ Thumbs.db
 *.orig
 *.bak
 TODO.md
-AGENTS.md
-CLAUDE.md
-.claude/
 .git-help
