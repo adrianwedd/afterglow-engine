@@ -260,15 +260,28 @@ class AudioAnalyzer:
 
         duration_samples = int(duration_sec * self.sr)
 
-        # Find consecutive stable windows
-        stable_indices = np.where(stable_mask)[0]
+        # Find consecutive runs of stable windows
+        # Pad with False at edges to detect run boundaries
+        padded = np.concatenate([[False], stable_mask, [False]])
+        diff = np.diff(padded.astype(int))
+        run_starts = np.where(diff == 1)[0]
+        run_ends = np.where(diff == -1)[0]
 
-        if len(stable_indices) < min_stable_windows:
+        # Filter runs by minimum length
+        consecutive_runs = []
+        for start_idx, end_idx in zip(run_starts, run_ends):
+            run_length = end_idx - start_idx
+            if run_length >= min_stable_windows:
+                consecutive_runs.append((start_idx, end_idx))
+
+        if not consecutive_runs:
             return None
 
-        # Pick a random stable window
-        chosen_idx = np.random.choice(stable_indices)
-        start, _ = self.get_sample_range_for_window(chosen_idx)
+        # Pick a random run and choose a window from it
+        chosen_run = consecutive_runs[np.random.randint(len(consecutive_runs))]
+        start_window_idx, end_window_idx = chosen_run
+        window_idx = np.random.randint(start_window_idx, end_window_idx)
+        start, _ = self.get_sample_range_for_window(window_idx)
 
         # Extend to requested duration
         end = min(start + duration_samples, len(self.audio))

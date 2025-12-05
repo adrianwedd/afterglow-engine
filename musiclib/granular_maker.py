@@ -177,7 +177,7 @@ def extract_grains(
             max_crest=max_crest_factor,
         )
         num_stable = np.sum(stable_mask) if stable_mask is not None else 0
-        print(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}], DC={max_dc_offset}, crest={max_crest_factor})")
+        dsp_utils.vprint(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}], DC={max_dc_offset}, crest={max_crest_factor})")
 
     # Extract grains with optional quality filtering
     attempts = 0
@@ -323,10 +323,10 @@ def create_cloud(
     # Create analyzer only if enabled
     analyzer = None
     if use_pre_analysis:
-        print(f"  [pre-analysis] Analyzing audio: {analysis_window_sec}s window, {analysis_hop_sec}s hop, onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC_offset={max_dc_offset}, crest={max_crest}")
+        dsp_utils.vprint(f"  [pre-analysis] Analyzing audio: {analysis_window_sec}s window, {analysis_hop_sec}s hop, onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC_offset={max_dc_offset}, crest={max_crest}")
         analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
     else:
-        print(f"  [pre-analysis] Disabled: using random grain extraction")
+        dsp_utils.vprint(f"  [pre-analysis] Disabled: using random grain extraction")
 
     # Extract grains with quality filtering and optional pre-analysis
     grains = extract_grains(

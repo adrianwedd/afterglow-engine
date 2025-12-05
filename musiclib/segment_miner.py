@@ -59,22 +59,27 @@ def extract_sustained_segments(
         if pre_analysis_config.get('enabled', True):
             analysis_window_sec = pre_analysis_config.get('analysis_window_sec', 1.0)
             analysis_hop_sec = pre_analysis_config.get('analysis_hop_sec', 0.5)
-            max_dc_offset = pre_analysis_config.get('max_dc_offset', 0.1)
-            max_crest = pre_analysis_config.get('max_crest_factor', 10.0)
 
-            print(f"    [pre-analysis] Analyzing for pad mining: onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC={max_dc_offset}, crest={max_crest}")
+            # Use pre_analysis thresholds if present, otherwise fall back to pad_miner args
+            pre_min_rms_db = pre_analysis_config.get('min_rms_db', min_rms_db)
+            pre_max_rms_db = pre_analysis_config.get('max_rms_db', max_rms_db)
+            pre_max_onset_rate = pre_analysis_config.get('max_onset_rate_hz', max_onset_rate)
+            pre_max_dc_offset = pre_analysis_config.get('max_dc_offset', 0.1)
+            pre_max_crest = pre_analysis_config.get('max_crest_factor', 10.0)
+
+            dsp_utils.vprint(f"    [pre-analysis] Analyzing for pad mining: onset_rate={pre_max_onset_rate}, RMS=[{pre_min_rms_db}, {pre_max_rms_db}] dB, DC={pre_max_dc_offset}, crest={pre_max_crest}")
             analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
             stable_mask = analyzer.get_stable_regions(
-                max_onset_rate=max_onset_rate,
-                rms_low_db=min_rms_db,
-                rms_high_db=max_rms_db,
-                max_dc_offset=max_dc_offset,
-                max_crest=max_crest,
+                max_onset_rate=pre_max_onset_rate,
+                rms_low_db=pre_min_rms_db,
+                rms_high_db=pre_max_rms_db,
+                max_dc_offset=pre_max_dc_offset,
+                max_crest=pre_max_crest,
             )
         else:
-            print(f"    [pre-analysis] Disabled: using standard sustained segment detection")
+            dsp_utils.vprint(f"    [pre-analysis] Disabled: using standard sustained segment detection")
     else:
-        print(f"    [pre-analysis] No config provided; using standard sustained segment detection")
+        dsp_utils.vprint(f"    [pre-analysis] No config provided; using standard sustained segment detection")
 
     # Compute onset strength
     onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)

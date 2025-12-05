@@ -10,6 +10,23 @@ except ImportError:
     librosa = None
 
 
+# Global verbose flag for pre-analysis logging
+_verbose = False
+
+
+def set_verbose(verbose: bool):
+    """Enable/disable verbose logging for pre-analysis."""
+    global _verbose
+    _verbose = verbose
+
+
+def vprint(*args, **kwargs):
+    """Print only if verbose mode is enabled."""
+    global _verbose
+    if _verbose:
+        print(*args, **kwargs)
+
+
 def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.ndarray:
     """
     Normalize audio to a target peak level.
