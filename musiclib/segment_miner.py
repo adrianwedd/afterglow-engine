@@ -54,6 +54,11 @@ def extract_sustained_segments(
     # Pre-analyze if requested (identifies stable regions with low DC/crest)
     stable_mask = None
     analyzer = None
+    use_pre_analysis_thresholds = False
+    pre_min_rms_db = min_rms_db
+    pre_max_rms_db = max_rms_db
+    pre_max_onset_rate = max_onset_rate
+
     if use_pre_analysis and config is not None:
         pre_analysis_config = config.get('pre_analysis', {})
         if pre_analysis_config.get('enabled', True):
@@ -66,6 +71,10 @@ def extract_sustained_segments(
             pre_max_onset_rate = pre_analysis_config.get('max_onset_rate_hz', max_onset_rate)
             pre_max_dc_offset = pre_analysis_config.get('max_dc_offset', 0.1)
             pre_max_crest = pre_analysis_config.get('max_crest_factor', 10.0)
+
+            # If pre_analysis config has thresholds, use them for window-level checks too
+            if 'min_rms_db' in pre_analysis_config or 'max_rms_db' in pre_analysis_config or 'max_onset_rate_hz' in pre_analysis_config:
+                use_pre_analysis_thresholds = True
 
             dsp_utils.vprint(f"    [pre-analysis] Analyzing for pad mining: onset_rate={pre_max_onset_rate}, RMS=[{pre_min_rms_db}, {pre_max_rms_db}] dB, DC={pre_max_dc_offset}, crest={pre_max_crest}")
             analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
@@ -88,19 +97,24 @@ def extract_sustained_segments(
     )
 
     # Analyze sliding windows
+    # Use pre-analysis thresholds if they were explicitly set, otherwise use pad_miner defaults
+    window_min_rms_db = pre_min_rms_db if use_pre_analysis_thresholds else min_rms_db
+    window_max_rms_db = pre_max_rms_db if use_pre_analysis_thresholds else max_rms_db
+    window_max_onset_rate = pre_max_onset_rate if use_pre_analysis_thresholds else max_onset_rate
+
     for start in range(0, len(audio) - window_samples, hop_samples):
         end = start + window_samples
         segment = audio[start:end]
 
-        # Check RMS level
+        # Check RMS level (using appropriate thresholds)
         rms_db = dsp_utils.rms_energy_db(segment)
-        if rms_db < min_rms_db or rms_db > max_rms_db:
+        if rms_db < window_min_rms_db or rms_db > window_max_rms_db:
             continue
 
-        # Check onset density
+        # Check onset density (using appropriate thresholds)
         onsets_in_window = np.sum((onset_frames >= start) & (onset_frames < end))
         onset_rate = onsets_in_window / target_duration_sec
-        if onset_rate > max_onset_rate:
+        if onset_rate > window_max_onset_rate:
             continue
 
         # Check spectral flatness (tonality)
