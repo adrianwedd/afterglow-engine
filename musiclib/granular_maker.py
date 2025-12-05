@@ -181,8 +181,11 @@ def apply_pitch_shift_grain(
     if shift == 0:
         return grain
 
+    # Adaptive n_fft: use grain length if shorter than 2048 to avoid librosa warnings
+    n_fft = min(2048, max(512, len(grain)))
+
     try:
-        return librosa.effects.pitch_shift(grain, sr=sr, n_steps=shift, n_fft=2048)
+        return librosa.effects.pitch_shift(grain, sr=sr, n_steps=shift, n_fft=n_fft)
     except Exception:
         # Fallback if pitch shift fails (e.g., too short grain)
         return grain
