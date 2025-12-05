@@ -231,24 +231,6 @@ On first run, a default `config.yaml` is created with commented values. Customiz
 
 See `config.yaml` for all tunable parameters with inline documentation.
 
-### New Features (v0.2)
-
-**Multiple Pad Durations**: `pad_miner.target_durations_sec` now accepts a list (e.g., `[2.0, 3.5]`), allowing pads of different lengths to be extracted from the same source.
-
-**Configurable Loop Crossfade**: `pad_miner.loop_crossfade_ms` controls the crossfade length used to create seamless pad loops.
-
-**Per-Category Stereo/Mono Export**:
-- `export.pads_stereo`, `export.swells_stereo`, `export.clouds_stereo`, `export.hiss_stereo`
-- Set to `true` to preserve or create stereo versions of textures
-
-**Configurable Granular Pitch Range**: `clouds.pitch_shift_range` with `min` and `max` (in semitones) replaces the old single `max_pitch_shift_semitones`.
-
-**Configurable Hiss Band-Pass Frequencies**:
-- `hiss.bandpass_low_hz` and `hiss.bandpass_high_hz` let you adjust the high-frequency range for hiss loops and flickers.
-
-**Brightness Tagging**: Filenames now include `_dark`, `_mid`, or `_bright` tags based on spectral centroid analysis (for pads and clouds).
-- Control via `brightness_tags.enabled`, `centroid_low_hz`, `centroid_high_hz`
-
 ## Workflow
 
 ### 1. Prepare Your Audio
