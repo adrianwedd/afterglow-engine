@@ -76,6 +76,11 @@ def save_audio(
     Returns:
         True if successful, False otherwise
     """
+    # Validate bit depth before attempting save
+    if bit_depth not in {16, 24}:
+        print(f"  [!] Invalid bit_depth={bit_depth} for {filepath}. Use 16 or 24.")
+        return False
+
     try:
         # Create parent directories if needed
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -83,10 +88,8 @@ def save_audio(
         # Determine subtype based on bit depth
         if bit_depth == 16:
             subtype = 'PCM_16'
-        elif bit_depth == 24:
+        else:  # bit_depth == 24
             subtype = 'PCM_24'
-        else:
-            subtype = 'PCM_32'
 
         sf.write(filepath, audio, sr, subtype=subtype)
         return True

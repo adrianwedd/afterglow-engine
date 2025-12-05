@@ -305,9 +305,19 @@ class AudioAnalyzer:
 
         # Compute spectral centroid, with guard for very short segments
         if len(segment) >= 512:
-            centroid_hz = np.mean(librosa.feature.spectral_centroid(y=segment, sr=self.sr))
+            if librosa is not None:
+                centroid_hz = np.mean(librosa.feature.spectral_centroid(y=segment, sr=self.sr))
+            else:
+                # Fallback FFT-based centroid if librosa unavailable
+                fft = np.fft.rfft(segment)
+                freqs = np.fft.rfftfreq(len(segment), 1 / self.sr)
+                magnitudes = np.abs(fft)
+                if np.sum(magnitudes) > 0:
+                    centroid_hz = np.sum(freqs * magnitudes) / np.sum(magnitudes)
+                else:
+                    centroid_hz = 2000.0
         else:
-            # For very short segments, reuse precomputed centroid or use default
+            # For very short segments, use default
             centroid_hz = 2000.0  # Neutral midrange default
 
         return {

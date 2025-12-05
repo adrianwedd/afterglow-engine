@@ -17,7 +17,7 @@ import yaml
 from pathlib import Path
 
 # Import musiclib modules
-from musiclib import segment_miner, drone_maker, granular_maker, hiss_maker, io_utils
+from musiclib import segment_miner, drone_maker, granular_maker, hiss_maker, io_utils, dsp_utils
 
 
 DEFAULT_CONFIG_YAML = """# Global audio settings
@@ -117,6 +117,12 @@ pre_analysis:
   grain_quality_threshold: 0.4          # Min quality score to accept grain
   skip_clipped_regions: true            # Avoid regions with clipping
   skip_transient_regions: true          # Avoid percussive regions
+
+# Reproducibility
+reproducibility:
+  random_seed: null                     # Set to an integer for deterministic results
+                                        # null = random (different results each run)
+                                        # Example: random_seed: 42
 """
 
 
@@ -256,6 +262,13 @@ Examples:
 
     # Load or create config
     config = load_or_create_config(args.config)
+
+    # Set random seed if specified (for reproducible results)
+    reproducibility_config = config.get('reproducibility', {})
+    random_seed = reproducibility_config.get('random_seed', None)
+    if random_seed is not None:
+        dsp_utils.set_random_seed(random_seed)
+        print(f"[*] Random seed set to {random_seed} (reproducible mode)")
 
     # Ensure all required directories exist
     ensure_directories(config)

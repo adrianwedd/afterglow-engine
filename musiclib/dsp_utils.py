@@ -27,6 +27,19 @@ def vprint(*args, **kwargs):
         print(*args, **kwargs)
 
 
+def set_random_seed(seed: int = None):
+    """
+    Set random seed for reproducible results.
+
+    Call this before running the pipeline if you want deterministic output.
+
+    Args:
+        seed: Random seed (None for non-deterministic behavior)
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+
 def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.ndarray:
     """
     Normalize audio to a target peak level.

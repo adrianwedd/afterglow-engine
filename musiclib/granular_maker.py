@@ -255,9 +255,9 @@ def apply_pitch_shift_grain(
     if shift == 0:
         return grain
 
-    # Adaptive n_fft: use grain length if shorter than 2048 to avoid librosa warnings
-    # Also set hop_length explicitly to avoid odd artifacts
-    n_fft = min(2048, max(512, len(grain)))
+    # Adaptive n_fft: clamp to grain length to avoid "n_fft too large" warnings
+    # Also set hop_length explicitly based on actual n_fft
+    n_fft = min(len(grain), 2048)
     hop_length = max(64, n_fft // 4)
 
     try:
