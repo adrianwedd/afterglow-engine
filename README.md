@@ -100,37 +100,19 @@ python validate_config.py          # optional but recommended
 python make_textures.py --all
 ```
 
-## What’s New in the Machine (v0.3)
+## What’s New
 
-- **Pre-analysis of your archive**: finds stable regions (low onset, sane RMS, low DC/crest), filters grains/pads by quality, and tags brightness. You can toggle it off or tune it in `pre_analysis` (window/hop, RMS/onset/DC/crest thresholds, grain quality, enabled flag).
-- **Granular clouds, refined**: per-grain length variation, quality-scored grains, adaptive pitch-shift (no tiny-grain artifacts), stereo export, brightness tags, optional seeds for repeatability.
-- **Pad mining, aligned**: pad extraction uses the same stability criteria as clouds when pre-analysis is enabled; brightness tags and stereo/mono export are configurable.
-- **Hiss/air layers**: hiss loops and flickers with band-pass/high-pass and tremolo options.
-- **Reproducibility & logging**: set `reproducibility.random_seed` for deterministic runs; enable verbose pre-analysis logs via `dsp_utils.set_verbose(True)` (default is quiet).
+Latest: **v0.6 – The Architect**
+- Musical awareness: detects key/BPM per source before processing.
+- Auto-transposition: set `target_key` and drones/clouds conform.
+- Perfect loops: phase-aligned seam finding to reduce clicks/wobble.
 
-## What's New in v0.6 (The Architect)
-
-- **Musical Awareness**: The engine now listens. It detects the Key and BPM of every source file before processing.
-- **Auto-Transposition**: Set a `target_key` in config (e.g., "C maj") and the machine will pitch-shift your drones and clouds to match.
-- **Perfect Loops**: The "Seamstress" algorithm uses cross-correlation to find the exact phase-aligned loop point, eliminating clicks and wobbles in pads.
-
-## What's New in v0.5 (The Curator)
-
-- **Manifest & Grading**: Every run produces a `manifest.csv` logging musical properties (RMS, Crest, Centroid) and a quality Grade (A/B/F).
-- **Quality Control**: Automatically skip or delete "Grade F" textures (silence, clipping, extreme transients).
-
-## What's New in v0.4 (Stability & Fallback)
-
-- **Quality-aware fallback**: If no windows pass strict stability thresholds, clouds pull grains from the least-onset windows that still pass RMS/DC/crest gates—no more percussive “accidents” when sources are lively.
-- **Keyed stability masks**: Stability caching now tracks threshold sets, so changing onset/RMS/centroid gates always recomputes masks.
-- **Safer clouds**: Grain offsets are clamped to window bounds; final clouds get guarded fades to avoid edge clicks; tape-style pitch shift keeps rates in a sane range.
-- **Defaults & validation**: Relaxed pre-analysis defaults for usable out-of-box results; config validation now checks analysis window/hop and overlap ratios. New tests cover analyzer caching, fallback sorting, and fade guards.
+See [CHANGELOG.md](CHANGELOG.md) for full release history (v0.4–v0.6).
 
 ## Where Everything Lives
 
 - **Source & scripts**: code and configs live here in the root (`musiclib/`, `make_textures.py`, `config.yaml`).
-- **Archived docs**: detailed guides, reviews, and batch workflow docs now live in `archive/docs/` (e.g., `CONFIG_QUICK_REFERENCE.md`, `UPGRADES.md`, `BATCH_WORKFLOW.md`, summaries).
-- **Archived audio sources**: large example/legacy audio folders are under `archive/audio_sources/` (kept out of the way for GitHub).
+- **Docs**: see `docs/` for quick references and workflows (e.g., `CONFIG_QUICK_REFERENCE.md`, `BATCH_WORKFLOW.md`).
 
 ## Testing (smoke & verification)
 
