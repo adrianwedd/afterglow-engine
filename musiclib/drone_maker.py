@@ -13,28 +13,33 @@ def process_pad_source(
     sr: int,
     pitch_shifts: List[int],
     time_stretches: List[float],
+    musical_context: dict = None,
 ) -> List[Tuple[np.ndarray, str]]:
     """
     Apply pitch shifts and time stretches to audio.
 
-    Args:
-        audio: Input audio
-        sr: Sample rate
-        pitch_shifts: List of pitch shifts in semitones
-        time_stretches: List of time-stretch factors
-
-    Returns:
-        List of (audio, description) tuples
+    If musical_context has 'transposition_semitones', it is applied relative to the base.
     """
     results = []
 
-    # Original
-    results.append((audio, "original"))
+    # Base transposition (global fix)
+    base_shift = 0
+    if musical_context and "transposition_semitones" in musical_context:
+        base_shift = musical_context["transposition_semitones"]
 
-    # Pitch shifts
+    # Original (with optional fix)
+    if base_shift != 0:
+        audio_base = librosa.effects.pitch_shift(audio, sr=sr, n_steps=base_shift)
+        results.append((audio_base, "original_tuned"))
+    else:
+        audio_base = audio
+        results.append((audio, "original"))
+
+    # Pitch shifts (relative to base)
     for shift in pitch_shifts:
         if shift != 0:
-            shifted = librosa.effects.pitch_shift(audio, sr=sr, n_steps=shift)
+            total_shift = base_shift + shift
+            shifted = librosa.effects.pitch_shift(audio, sr=sr, n_steps=total_shift)
             results.append((shifted, f"pitch_{shift:+d}"))
 
     # Time stretches
@@ -45,7 +50,7 @@ def process_pad_source(
                 continue
             if factor > 4.0:
                 factor = 4.0
-            stretched = librosa.effects.time_stretch(audio, rate=factor)
+            stretched = librosa.effects.time_stretch(audio_base, rate=factor)
             results.append((stretched, f"stretch_{factor:.1f}x"))
 
     return results
@@ -277,6 +282,9 @@ def process_pad_sources(config: dict) -> dict:
     sr = config['global']['sample_rate']
     pad_sources_dir = config['paths']['pad_sources_dir']
     files = io_utils.discover_audio_files(pad_sources_dir)
+    
+    musicality = config.get("musicality", {})
+    target_key = musicality.get("target_key")
 
     if not files:
         print(f"[*] No pad source files found in {pad_sources_dir}")
@@ -292,6 +300,26 @@ def process_pad_sources(config: dict) -> dict:
         audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
         if audio is None:
             continue
+            
+        # Musical Analysis
+        detected_key = music_theory.detect_key(audio, sr)
+        bpm, conf = music_theory.detect_bpm(audio, sr)
+        
+        musical_context = {
+            "key": detected_key,
+            "bpm": bpm if conf > 0.4 else None
+        }
+        
+        transposition = 0
+        if target_key and detected_key:
+            transposition = music_theory.get_transposition_interval(detected_key, target_key)
+            musical_context["transposition_semitones"] = transposition
+            print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
+        elif detected_key:
+            print(f"    > Detected Key: {detected_key}")
+            
+        if musical_context["bpm"]:
+            print(f"    > Detected BPM: {musical_context['bpm']:.1f}")
 
         # Get all pitch/stretch variants
         drone_config = config['drones']
@@ -300,6 +328,7 @@ def process_pad_sources(config: dict) -> dict:
             sr=sr,
             pitch_shifts=drone_config['pitch_shift_semitones'],
             time_stretches=drone_config['time_stretch_factors'],
+            musical_context=musical_context
         )
 
         outputs = []
@@ -318,7 +347,10 @@ def process_pad_sources(config: dict) -> dict:
             reversed_vars = make_reversed_variants(variant_audio, sr, variant_name, config)
             outputs.extend(reversed_vars)
 
-        results[stem] = outputs
+        results[stem] = {
+            "outputs": outputs,
+            "context": musical_context
+        }
         print(f"    → Generated {len(outputs)} audio file(s)")
 
     return results
@@ -333,7 +365,7 @@ def save_drone_outputs(
     Save drone maker outputs to export directories.
 
     Args:
-        drone_dict: Dictionary {source_name: [(audio, filename), ...]}
+        drone_dict: Dictionary {source_name: {"outputs": [(audio, filename), ...], "context": {...}}}
         config: Configuration dictionary
 
     Returns:
@@ -346,7 +378,15 @@ def save_drone_outputs(
     pads_saved = 0
     swells_saved = 0
 
-    for source_name, outputs in drone_dict.items():
+    for source_name, data in drone_dict.items():
+        # Handle legacy/simple structure just in case
+        if isinstance(data, list):
+            outputs = data
+            context = {}
+        else:
+            outputs = data["outputs"]
+            context = data.get("context", {})
+
         # Group by source name
         pad_export_dir = f"{export_dir}/{source_name}/pads"
         swell_export_dir = f"{export_dir}/{source_name}/swells"
@@ -371,6 +411,8 @@ def save_drone_outputs(
                 kind=metadata_type,
                 source=source_name,
                 filename=filename,
+                detected_key=context.get("key"),
+                detected_bpm=context.get("bpm"),
             )
             thresholds = config.get("curation", {}).get("thresholds", {})
             grade = dsp_utils.grade_audio(metadata, thresholds)

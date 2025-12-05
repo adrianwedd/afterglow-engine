@@ -58,3 +58,36 @@ def detect_bpm(audio: np.ndarray, sr: int) -> Tuple[Optional[float], float]:
         return (float(tempo), confidence)
     except Exception:
         return (None, 0.0)
+
+
+def get_transposition_interval(source_key: str, target_key: str) -> int:
+    """
+    Calculate shortest transposition in semitones from source to target.
+    e.g., C maj -> G maj = -5 or +7 (returns -5)
+    """
+    # Simple mapping map
+    semitones = {
+        "C": 0, "C#": 1, "DB": 1, "D": 2, "D#": 3, "EB": 3, 
+        "E": 4, "F": 5, "F#": 6, "GB": 6, "G": 7, "G#": 8, "AB": 8, 
+        "A": 9, "A#": 10, "BB": 10, "B": 11
+    }
+    
+    def parse_root(k):
+        # extract root part "C#" from "C# maj"
+        parts = k.split()
+        root = parts[0].upper()
+        return semitones.get(root, 0)
+
+    try:
+        src_val = parse_root(source_key)
+        tgt_val = parse_root(target_key)
+        
+        diff = tgt_val - src_val
+        # Wrap to -6 to +6 range for shortest path
+        while diff > 6:
+            diff -= 12
+        while diff < -6:
+            diff += 12
+        return diff
+    except Exception:
+        return 0

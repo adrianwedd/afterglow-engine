@@ -4,7 +4,7 @@ Hiss/air texture generator: create high-frequency layers and flicker bursts.
 
 from typing import List, Tuple
 import numpy as np
-from . import io_utils, dsp_utils
+from . import io_utils, dsp_utils, music_theory
 
 
 def create_synthetic_noise(
@@ -179,6 +179,7 @@ def process_hiss_from_drums(config: dict) -> dict:
     files = io_utils.discover_audio_files(drums_dir)
 
     hiss_config = config['hiss']
+    musicality = config.get("musicality", {})
 
     if not files:
         print(f"[*] No drum files found in {drums_dir}, will use synthetic noise")
@@ -194,6 +195,14 @@ def process_hiss_from_drums(config: dict) -> dict:
         audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
         if audio is None:
             continue
+            
+        # Musical Analysis (context)
+        detected_key = music_theory.detect_key(audio, sr)
+        bpm, conf = music_theory.detect_bpm(audio, sr)
+        if detected_key:
+            print(f"    > Detected Key: {detected_key}")
+        if conf > 0.4:
+            print(f"    > Detected BPM: {bpm:.1f}")
 
         outputs = []
 
@@ -228,7 +237,15 @@ def process_hiss_from_drums(config: dict) -> dict:
             filename = f"hiss_flicker_{stem}_{i + 1:02d}.wav"
             outputs.append((flicker, filename))
 
-        results[stem] = outputs
+        musical_context = {
+            "key": detected_key,
+            "bpm": bpm if conf > 0.4 else None
+        }
+
+        results[stem] = {
+            "outputs": outputs,
+            "context": musical_context
+        }
         print(f"    → Generated {len(outputs)} hiss audio file(s)")
 
     return results
@@ -242,7 +259,7 @@ def process_hiss_synthetic(config: dict) -> dict:
         config: Configuration dictionary
 
     Returns:
-        Dictionary {source_name: [(hiss_audio, filename), ...]}
+        Dictionary {source_name: {"outputs": [(hiss_audio, filename), ...], "context": ...}}
     """
     sr = config['global']['sample_rate']
     hiss_config = config['hiss']
@@ -295,7 +312,7 @@ def process_hiss_synthetic(config: dict) -> dict:
 
     print(f"  → Generated {len(outputs)} synthetic hiss audio file(s)")
 
-    return {"synthetic": outputs}
+    return {"synthetic": {"outputs": outputs, "context": {}}}
 
 
 def make_all_hiss(config: dict) -> dict:
@@ -330,7 +347,7 @@ def save_hiss(
     Save hiss loops and flickers to export directory.
 
     Args:
-        hiss_dict: Dictionary {source_name: [(hiss_audio, filename), ...]}
+        hiss_dict: Dictionary {source_name: {"outputs": [(hiss_audio, filename), ...], "context": ...}}
         config: Configuration dictionary
 
     Returns:
@@ -341,24 +358,36 @@ def save_hiss(
     export_dir = config['paths']['export_dir']
 
     total_saved = 0
-    for source_name, outputs in hiss_dict.items():
+    for source_name, data in hiss_dict.items():
+        # Handle legacy
+        if isinstance(data, list):
+            hiss_outputs = data
+            context = {}
+        else:
+            hiss_outputs = data["outputs"]
+            context = data.get("context", {})
+
         # Group by source name
         target_dir = f"{export_dir}/{source_name}/hiss"
         io_utils.ensure_directory(target_dir)
 
-        for hiss_audio, filename in outputs:
+        for hiss_audio, filename in hiss_outputs:
             filepath = f"{target_dir}/{filename}"
+            
             metadata = dsp_utils.compute_audio_metadata(
                 hiss_audio,
                 sr,
                 kind="hiss",
                 source=source_name,
                 filename=filename,
+                detected_key=context.get("key"),
+                detected_bpm=context.get("bpm"),
             )
             thresholds = config.get("curation", {}).get("thresholds", {})
             grade = dsp_utils.grade_audio(metadata, thresholds)
             metadata["grade"] = grade
             metadata["saved"] = True
+
             auto_delete = config.get("curation", {}).get("auto_delete_grade_f", False)
             if auto_delete and grade == "F":
                 metadata["saved"] = False

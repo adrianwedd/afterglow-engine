@@ -136,12 +136,14 @@ def compute_audio_metadata(
     kind: str = None,
     source: str = None,
     filename: str = None,
+    detected_key: str = None,
+    detected_bpm: float = None,
 ) -> dict:
     """
     Compute lightweight metadata for an audio buffer.
 
     Returns: filename, source, type, duration_sec, rms_db, peak, crest_factor,
-    centroid_hz, est_freq_hz, loop_error_db, brightness
+    centroid_hz, est_freq_hz, loop_error_db, brightness, detected_key, detected_bpm
     """
     duration_sec = len(audio) / sr if sr else 0.0
     rms = rms_energy(audio)
@@ -175,6 +177,8 @@ def compute_audio_metadata(
         "est_freq_hz": est_freq,
         "loop_error_db": loop_error_db,
         "brightness": brightness_tag,
+        "detected_key": detected_key,
+        "detected_bpm": detected_bpm,
     }
 
 

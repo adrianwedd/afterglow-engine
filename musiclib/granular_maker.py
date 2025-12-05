@@ -285,6 +285,7 @@ def apply_pitch_shift_grain(
     max_shift_semitones: float,
     min_grain_length_samples: int = 256,
     max_rate: float = 2.0,
+    transposition_semitones: float = 0.0,
 ) -> np.ndarray:
     """
     Apply random pitch shift to a grain using resampling (tape speed effect).
@@ -297,19 +298,22 @@ def apply_pitch_shift_grain(
         sr: Sample rate
         min_shift_semitones: Minimum pitch shift
         max_shift_semitones: Maximum pitch shift
+        transposition_semitones: Fixed shift to apply on top of random shift
 
     Returns:
         Resampled (pitch-shifted) grain
     """
-    if min_shift_semitones == 0 and max_shift_semitones == 0:
+    if min_shift_semitones == 0 and max_shift_semitones == 0 and transposition_semitones == 0:
         return grain
 
     # Skip pitch-shift for very short grains to avoid artifacts and extreme resample rates
     if len(grain) < min_grain_length_samples:
         return grain
 
-    shift = np.random.uniform(min_shift_semitones, max_shift_semitones)
-    if shift == 0:
+    random_shift = np.random.uniform(min_shift_semitones, max_shift_semitones)
+    total_shift = random_shift + transposition_semitones
+    
+    if total_shift == 0:
         return grain
 
     # If librosa is unavailable, skip pitch-shift gracefully
@@ -319,7 +323,7 @@ def apply_pitch_shift_grain(
     # Calculate resampling rate
     # rate > 1.0 = pitch up (shorter)
     # rate < 1.0 = pitch down (longer)
-    rate = 2.0 ** (shift / 12.0)
+    rate = 2.0 ** (total_shift / 12.0)
     # Clamp rate to avoid extreme resampling (CPU and density impact)
     rate = max(1.0 / max_rate, min(max_rate, rate))
 
@@ -342,6 +346,7 @@ def create_cloud(
     pitch_shift_max: float,
     overlap_ratio: float,
     config: dict = None,
+    transposition_semitones: float = 0.0,
 ) -> np.ndarray:
     """
     Generate a granular cloud texture from audio.
@@ -363,6 +368,7 @@ def create_cloud(
         pitch_shift_max: Maximum pitch shift in semitones (positive = higher)
         overlap_ratio: Grain overlap ratio (0.5-1.0)
         config: Configuration dictionary (optional; uses defaults if not provided)
+        transposition_semitones: Fixed pitch shift to apply to all grains
 
     Returns:
         Generated cloud audio array
@@ -427,7 +433,7 @@ def create_cloud(
 
     # Apply pitch shifts (resampling)
     grains = [
-        apply_pitch_shift_grain(g, sr, pitch_shift_min, pitch_shift_max)
+        apply_pitch_shift_grain(g, sr, pitch_shift_min, pitch_shift_max, transposition_semitones=transposition_semitones)
         for g in grains
     ]
 
@@ -504,6 +510,7 @@ def make_clouds_from_source(
     stem_name: str,
     config: dict,
     source_index: int = 1,
+    transposition_semitones: float = 0.0,
 ) -> List[Tuple[np.ndarray, str, str]]:
     """
     Create multiple cloud variations from a source audio.
@@ -519,6 +526,7 @@ def make_clouds_from_source(
         stem_name: Source name for filename
         config: Configuration dictionary
         source_index: Source index for naming
+        transposition_semitones: Fixed pitch shift to apply
 
     Returns:
         List of (cloud_audio, brightness_tag, filename) tuples
@@ -584,6 +592,7 @@ def make_clouds_from_source(
             pitch_shift_max=pitch_max,
             overlap_ratio=cloud_config['overlap_ratio'],
             config=config,
+            transposition_semitones=transposition_semitones,
         )
 
         # Apply filtering
@@ -624,6 +633,9 @@ def process_cloud_sources(config: dict) -> dict:
     sr = config['global']['sample_rate']
     pad_sources_dir = config['paths']['pad_sources_dir']
     files = io_utils.discover_audio_files(pad_sources_dir)
+    
+    musicality = config.get("musicality", {})
+    target_key = musicality.get("target_key")
 
     if not files:
         print(f"[*] No pad source files found for cloud generation in {pad_sources_dir}")
@@ -639,9 +651,28 @@ def process_cloud_sources(config: dict) -> dict:
         audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
         if audio is None:
             continue
+            
+        # Musical Analysis
+        detected_key = music_theory.detect_key(audio, sr)
+        transposition = 0
+        if target_key and detected_key:
+            transposition = music_theory.get_transposition_interval(detected_key, target_key)
+            print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
+        elif detected_key:
+            print(f"    > Detected Key: {detected_key}")
 
-        clouds = make_clouds_from_source(audio, sr, stem, config)
-        results[stem] = clouds
+        clouds = make_clouds_from_source(audio, sr, stem, config, transposition_semitones=transposition)
+        
+        musical_context = {
+            "key": detected_key,
+            # bpm not detected here yet, but we could if we wanted to be consistent
+            # For now, clouds mostly use key.
+        }
+        
+        results[stem] = {
+            "outputs": clouds,
+            "context": musical_context
+        }
         print(f"    → Generated {len(clouds)} cloud(s)")
 
     return results
@@ -656,7 +687,7 @@ def save_clouds(
     Save granular clouds to export directory.
 
     Args:
-        clouds_dict: Dictionary {source_name: [(cloud_audio, brightness_tag, filename), ...]}
+        clouds_dict: Dictionary {source_name: {"outputs": [...], "context": ...}}
         config: Configuration dictionary
 
     Returns:
@@ -667,7 +698,15 @@ def save_clouds(
     export_dir = config['paths']['export_dir']
 
     total_saved = 0
-    for source_name, clouds_data in clouds_dict.items():
+    for source_name, data in clouds_dict.items():
+        # Handle legacy structure
+        if isinstance(data, list):
+            clouds_data = data
+            context = {}
+        else:
+            clouds_data = data["outputs"]
+            context = data.get("context", {})
+
         # Group by source name
         target_dir = f"{export_dir}/{source_name}/clouds"
         io_utils.ensure_directory(target_dir)
@@ -695,6 +734,7 @@ def save_clouds(
                 kind="cloud",
                 source=source_name,
                 filename=filename_with_tag,
+                detected_key=context.get("key"),
             )
             thresholds = config.get("curation", {}).get("thresholds", {})
             grade = dsp_utils.grade_audio(metadata, thresholds)
