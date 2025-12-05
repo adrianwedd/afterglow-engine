@@ -1,76 +1,64 @@
-# Audio source files (too large)
+# --- Python & Environment ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+.pytest_cache/
+
+# --- Audio Sources (Large Binaries) ---
 *.flac
 *.wav
 *.aiff
 *.aif
 *.mp3
+*.m4a
+*.ogg
 
-# Generated outputs
+# --- Application Outputs ---
 export/
 work/
 
-# Batch workflow artifacts
+# --- Application Inputs (Local) ---
+# Keep these local so users don't commit their sample libraries
+source_audio/
+pad_sources/
+drums/
+
+# --- Configuration ---
+# Ignore local config changes, but keep the template if we rename it later.
+# For now, we assume config.yaml is the working config.
+# config.yaml 
+
+# --- Temporary / Batch Artifacts ---
 audio_catalog.csv
 audio_catalog.json
 audio_catalog.md
 selected_sources.csv
 selected_sources.json
 batch_results.json
-
-# Test files
 test_*.csv
 test_*.json
 
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-# Virtual environments
-venv/
-env/
-.venv
-
-# IDE
+# --- OS & IDE ---
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+.Trashes
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-
-# Project directories (music collections)
-1997 - Elevations/
-Mr. Cloudy - Cloudy Tracks Flac/
-Mr. Cloudy - Light In My Head FLAC/
-Paul St Hilaire - Tikiman Vol 1-16bit-Web-FLAC-2023/
-rod modell - vibrasound (the deepchord years 1999-2004)/
-VA - Dreamy Harbor [2017] [TRESOR291]/
-
-# Source directories
-source_audio/
-pad_sources/
-drums/
-
-# Legacy/temporary
+# --- Legacy / Misc ---
 *.orig
 *.bak
 TODO.md
 AGENTS.md
 CLAUDE.md
-venv/
-venv311/
-musiclib/granular_maker_orig.py
-.DS_Store
-.vscode/
 .claude/
 .git-help
