@@ -1,0 +1,99 @@
+# Enhanced Configuration for Solanus - More Variation & Better Results
+# Copy to config.yaml or run with: python make_textures.py --all --config config_enhanced.yaml
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  pad_sources_dir: pad_sources
+  drums_dir: drums
+  export_dir: export/tr8s
+
+# ENHANCED PAD MINER: Extract more pads with varied durations
+pad_miner:
+  # Multiple durations for variety
+  target_durations_sec: [1.5, 2.5, 3.5, 4.5]    # 4 different lengths
+  min_rms_db: -45.0                             # Slightly more permissive
+  max_rms_db: -8.0                              # Get more dynamic range
+  max_onset_rate_per_second: 2.5                # Stricter (more sustained)
+  spectral_flatness_threshold: 0.45             # Prefer more tonal material
+  max_candidates_per_file: 6                    # Extract more pads per file (was 3)
+  loop_crossfade_ms: 120                        # Slightly longer crossfade
+  window_hop_sec: 0.3                           # More frequent analysis windows
+
+# ENHANCED DRONES/SWELLS: Longer, more varied swells
+drones:
+  # Pad loop parameters
+  pad_loop_duration_sec: 2.0
+  pad_variants:
+    - warm
+    - airy
+    - dark
+
+  # Tonal filtering
+  warm_lowpass_hz: 3500                         # Slightly brighter warm
+  airy_highpass_hz: 5500                        # Slightly warmer airy
+  dark_high_cut_hz: 1200                        # Even darker dark
+
+  # ENHANCED: More and longer swells with more variation
+  swell_duration_sec: 10.0                      # Longer base swell (was 6.0)
+  fade_in_sec: 1.0                              # Longer fade-in
+  fade_out_sec: 2.5                             # Longer fade-out (now 3.5s total ramp)
+
+  # MORE variations
+  pitch_shift_semitones: [0, 5, 7, 12, -5]      # 5 pitch variants (was 3)
+  time_stretch_factors: [1.0, 1.2, 1.5, 2.0]    # 4 stretch factors (was 3)
+  enable_reversal: true
+
+# ENHANCED CLOUDS: Better source selection + more variations
+clouds:
+  # Slightly shorter grains for better clarity
+  grain_length_min_ms: 40                       # Shorter min
+  grain_length_max_ms: 120                      # Shorter max (tighter, punchier)
+
+  # More grains for denser texture
+  grains_per_cloud: 300                         # More grains (was 200)
+
+  # Longer output for more development
+  cloud_duration_sec: 8.0                       # Longer cloud (was 6.0)
+
+  # Wider pitch range for more extreme variation
+  pitch_shift_range:
+    min: -12                                    # Lower bound (was -8)
+    max: 12                                     # Upper bound (was 8)
+
+  overlap_ratio: 0.7                            # Slightly more overlap for legato
+  lowpass_hz: 10000                             # Less aggressive filtering
+  clouds_per_source: 4                          # More clouds (was 2)
+
+# ENHANCED HISS: More options
+hiss:
+  loop_duration_sec: 2.0                        # Longer loops
+  highpass_hz: 5500                             # Slightly less aggressive
+  bandpass_low_hz: 4000                         # Lower for more presence
+  bandpass_high_hz: 15000                       # Higher for more air
+  use_bandpass: true
+  tremolo_rate_hz: 2.5                          # Slower modulation
+  tremolo_depth: 0.5                            # Slightly subtler
+  hiss_loops_per_source: 3                      # More variations (was 2)
+
+  flicker_min_ms: 30
+  flicker_max_ms: 500                           # Wider range
+  flicker_count: 6                              # More flickers (was 4)
+
+  use_synthetic_noise: true
+  synthetic_noise_level_db: -12.0               # Slightly quieter base
+
+export:
+  pads_stereo: false
+  swells_stereo: false
+  clouds_stereo: true                           # ENHANCED: Stereo clouds for width
+  hiss_stereo: true                             # ENHANCED: Stereo hiss for width
+
+brightness_tags:
+  enabled: true
+  centroid_low_hz: 1200
+  centroid_high_hz: 4000
