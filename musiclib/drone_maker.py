@@ -140,7 +140,10 @@ def make_pad_loops(
     pad = extract_pad_loop(audio, sr, duration)
 
     # Make loopable
-    crossfade_ms = pm_config['crossfade_ms']
+    crossfade_ms = pm_config.get(
+        "loop_crossfade_ms",
+        pm_config.get("crossfade_ms", 100),
+    )
     pad = dsp_utils.time_domain_crossfade_loop(pad, crossfade_ms, sr)
 
     # Normalize
@@ -226,7 +229,19 @@ def make_reversed_variants(
     if not config['drones']['enable_reversal']:
         return []
 
-    reversed_audio = np.flip(audio)
+    drone_config = config['drones']
+    pm_config = config['pad_miner']
+
+    # Reuse loop extraction so reversed clips stay short and consistent
+    loop_audio = extract_pad_loop(audio, sr, drone_config['pad_loop_duration_sec'])
+
+    crossfade_ms = pm_config.get(
+        "loop_crossfade_ms",
+        pm_config.get("crossfade_ms", 100),
+    )
+    loop_audio = dsp_utils.time_domain_crossfade_loop(loop_audio, crossfade_ms, sr)
+
+    reversed_audio = np.flip(loop_audio)
     reversed_audio = dsp_utils.normalize_audio(
         reversed_audio, config['global']['target_peak_dbfs']
     )

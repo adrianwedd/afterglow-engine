@@ -45,7 +45,7 @@ def extract_sustained_segments(
     # Compute onset strength
     onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)
     onset_frames = librosa.onset.onset_detect(
-        onset_strength=onset_strength, sr=sr, units='samples'
+        onset_envelope=onset_strength, sr=sr, units='samples'
     )
 
     # Analyze sliding windows

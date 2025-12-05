@@ -54,7 +54,7 @@ def rms_energy_db(audio: np.ndarray, min_db: float = -80.0) -> float:
 
 def hann_window(length: int) -> np.ndarray:
     """Create a Hann window."""
-    return signal.hann(length, sym=False)
+    return signal.windows.hann(length, sym=False)
 
 
 def crossfade(audio1: np.ndarray, audio2: np.ndarray, fade_length: int) -> np.ndarray:
@@ -188,6 +188,11 @@ def apply_filter(audio: np.ndarray, b: np.ndarray, a: np.ndarray) -> np.ndarray:
     Returns:
         Filtered audio
     """
+    min_len = 3 * max(len(a), len(b))
+    if len(audio) < min_len:
+        # Too short for filtfilt stability; return unfiltered audio
+        # to avoid crashes on tiny hiss/flicker segments.
+        return audio
     return signal.filtfilt(b, a, audio)
 
 
@@ -248,6 +253,12 @@ def time_domain_crossfade_loop(audio: np.ndarray, crossfade_ms: float, sr: int) 
         Audio with smoothed loop point
     """
     crossfade_samples = int(crossfade_ms * sr / 1000)
+
+    # Guard against zero or very small crossfades
+    if crossfade_samples < 1:
+        return audio.copy()
+
+    # Clamp crossfade to half the audio length
     if crossfade_samples > len(audio) // 2:
         crossfade_samples = len(audio) // 2
 
@@ -278,6 +289,10 @@ def classify_brightness(audio: np.ndarray, sr: int, centroid_low_hz: float = 150
     Returns:
         One of: "dark", "mid", "bright"
     """
+    # Ensure mono for consistent centroid measurement
+    if audio.ndim > 1:
+        audio = stereo_to_mono(audio)
+
     if librosa is None:
         # Fallback if librosa not available: compute simple spectral centroid
         # using FFT-based approach
@@ -326,4 +341,5 @@ def mono_to_stereo(audio: np.ndarray) -> np.ndarray:
     """
     if audio.ndim == 2:
         return audio
-    return np.vstack([audio, audio])
+    # SoundFile expects (samples, channels)
+    return np.column_stack((audio, audio))
