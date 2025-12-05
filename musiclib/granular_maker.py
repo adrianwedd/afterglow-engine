@@ -255,6 +255,10 @@ def apply_pitch_shift_grain(
     if shift == 0:
         return grain
 
+    # If librosa is unavailable, skip pitch-shift gracefully
+    if librosa is None:
+        return grain
+
     # Adaptive n_fft: clamp to grain length to avoid "n_fft too large" warnings
     # Also set hop_length explicitly based on actual n_fft
     n_fft = min(len(grain), 2048)

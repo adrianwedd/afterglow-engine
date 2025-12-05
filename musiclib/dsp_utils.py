@@ -38,6 +38,12 @@ def set_random_seed(seed: int = None):
     """
     if seed is not None:
         np.random.seed(seed)
+        try:
+            import random
+            random.seed(seed)
+        except Exception:
+            # If stdlib random is unavailable for some reason, skip without failing
+            pass
 
 
 def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.ndarray:
