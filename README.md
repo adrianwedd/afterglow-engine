@@ -1,4 +1,10 @@
-# Music Texture Tool
+# afterglow-engine
+
+*A small offline tool that mines your past work for new textures.*
+
+---
+
+## What this is
 
 Imagine this:
 
@@ -53,28 +59,29 @@ a patient studio assistant that wanders through your archives, gently steals bac
 So future paintings are not just new images.  
 They’re painted with **the ground-up archaeology of everything you’ve ever touched.**
 
-This tool is that idea, implemented in code for sound. It doesn’t make creative choices; it just mines, processes, and re-bottles audio so you can paint with your own sonic pigment. Under the hood, it:
-- mines sustained pad segments from your archive (RMS/onset/tonality + optional pre-analysis of stable regions),
-- generates loopable pads/swells with tonal variants and reversals,
-- builds granular “clouds” with quality-filtered grains, brightness tagging, stereo export, and deterministic seeding if desired,
-- creates hiss/air layers and flickers,
-- exports TR-8S-ready WAVs (44.1 kHz, 16/24-bit) with per-category stereo/mono control.
+`afterglow-engine` is that idea, implemented in code.
 
-Nothing here paints for you. It just lays out fresh jars of your own textures, ready for whatever canvas you choose next.
+It doesn’t make tracks.  
+It doesn’t make creative choices.  
+It just walks your archive and turns the **afterglow** of your work into new material.
 
-## Quick Start (quiet, deterministic)
+---
+
+## Quick Start
+
+The short version:
 
 ```bash
+# 1. Create and activate a virtualenv
 python -m venv venv
 source venv/bin/activate
+
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# Optional: reproducible runs
-# In config.yaml, set:
-# reproducibility:
-#   random_seed: 42
-
-python make_textures.py --make-clouds        # or --all
+# 3. Generate textures from the default folders using the default config
+python validate_config.py          # optional but recommended
+python make_textures.py --all
 ```
 
 ## What’s New in the Machine (v0.3)

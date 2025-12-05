@@ -44,3 +44,22 @@ def validate_config(config: dict) -> None:
         for e in errors:
             print(f"[config] {e}", file=sys.stderr)
         raise ValueError("Invalid configuration; see messages above.")
+
+
+if __name__ == "__main__":
+    import yaml
+    import os
+
+    config_path = "config.yaml"
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            try:
+                config = yaml.safe_load(f)
+                validate_config(config)
+                print("[*] Configuration is valid.")
+            except Exception as e:
+                print(f"[!] Config validation failed: {e}", file=sys.stderr)
+                sys.exit(1)
+    else:
+        print(f"[!] {config_path} not found. Run make_textures.py first to generate it.", file=sys.stderr)
+        sys.exit(1)
