@@ -45,8 +45,8 @@ def process_pad_source(
             if librosa is None:
                 continue
             try:
-                total_shift = base_shift + shift
-                shifted = librosa.effects.pitch_shift(audio, sr=sr, n_steps=total_shift)
+                # Apply shift to the potentially already-transposed base
+                shifted = librosa.effects.pitch_shift(audio_base, sr=sr, n_steps=shift)
                 results.append((shifted, f"pitch_{shift:+d}"))
             except Exception:
                 continue
