@@ -511,6 +511,7 @@ def make_clouds_from_source(
     config: dict,
     source_index: int = 1,
     transposition_semitones: float = 0.0,
+    detected_bpm: float = None,
 ) -> List[Tuple[np.ndarray, str, str]]:
     """
     Create multiple cloud variations from a source audio.
@@ -527,6 +528,7 @@ def make_clouds_from_source(
         config: Configuration dictionary
         source_index: Source index for naming
         transposition_semitones: Fixed pitch shift to apply
+        detected_bpm: Pre-detected BPM (optional)
 
     Returns:
         List of (cloud_audio, brightness_tag, filename) tuples
@@ -567,9 +569,13 @@ def make_clouds_from_source(
         except Exception:
             bpm_context = None
     elif musicality.get("reference_bpm") == "detect":
-        bpm_context, conf = music_theory.detect_bpm(audio, sr)
-        if conf < 0.2:  # low confidence -> ignore
-            bpm_context = None
+        if detected_bpm is not None:
+            bpm_context = detected_bpm
+        else:
+            # Fallback if not passed (e.g. direct call)
+            bpm_context, conf = music_theory.detect_bpm(audio, sr)
+            if conf < 0.2:  # low confidence -> ignore
+                bpm_context = None
 
     # Helper: bars to seconds if snapping
     def bars_to_seconds(bars: float) -> float:
@@ -654,19 +660,23 @@ def process_cloud_sources(config: dict) -> dict:
             
         # Musical Analysis
         detected_key = music_theory.detect_key(audio, sr)
+        bpm, conf = music_theory.detect_bpm(audio, sr)
+        
         transposition = 0
         if target_key and detected_key:
             transposition = music_theory.get_transposition_interval(detected_key, target_key)
             print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
         elif detected_key:
             print(f"    > Detected Key: {detected_key}")
+            
+        if conf > 0.4:
+            print(f"    > Detected BPM: {bpm:.1f}")
 
-        clouds = make_clouds_from_source(audio, sr, stem, config, transposition_semitones=transposition)
+        clouds = make_clouds_from_source(audio, sr, stem, config, transposition_semitones=transposition, detected_bpm=bpm if conf > 0.4 else None)
         
         musical_context = {
             "key": detected_key,
-            # bpm not detected here yet, but we could if we wanted to be consistent
-            # For now, clouds mostly use key.
+            "bpm": bpm if conf > 0.4 else None
         }
         
         results[stem] = {
@@ -735,6 +745,7 @@ def save_clouds(
                 source=source_name,
                 filename=filename_with_tag,
                 detected_key=context.get("key"),
+                detected_bpm=context.get("bpm"),
             )
             thresholds = config.get("curation", {}).get("thresholds", {})
             grade = dsp_utils.grade_audio(metadata, thresholds)

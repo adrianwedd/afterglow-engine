@@ -28,9 +28,13 @@ def process_pad_source(
         base_shift = musical_context["transposition_semitones"]
 
     # Original (with optional fix)
-    if base_shift != 0:
-        audio_base = librosa.effects.pitch_shift(audio, sr=sr, n_steps=base_shift)
-        results.append((audio_base, "original_tuned"))
+    if base_shift != 0 and librosa is not None:
+        try:
+            audio_base = librosa.effects.pitch_shift(audio, sr=sr, n_steps=base_shift)
+            results.append((audio_base, "original_tuned"))
+        except Exception:
+            audio_base = audio
+            results.append((audio, "original_tuned_failed"))
     else:
         audio_base = audio
         results.append((audio, "original"))
@@ -38,9 +42,14 @@ def process_pad_source(
     # Pitch shifts (relative to base)
     for shift in pitch_shifts:
         if shift != 0:
-            total_shift = base_shift + shift
-            shifted = librosa.effects.pitch_shift(audio, sr=sr, n_steps=total_shift)
-            results.append((shifted, f"pitch_{shift:+d}"))
+            if librosa is None:
+                continue
+            try:
+                total_shift = base_shift + shift
+                shifted = librosa.effects.pitch_shift(audio, sr=sr, n_steps=total_shift)
+                results.append((shifted, f"pitch_{shift:+d}"))
+            except Exception:
+                continue
 
     # Time stretches
     for factor in time_stretches:
@@ -50,8 +59,15 @@ def process_pad_source(
                 continue
             if factor > 4.0:
                 factor = 4.0
-            stretched = librosa.effects.time_stretch(audio_base, rate=factor)
-            results.append((stretched, f"stretch_{factor:.1f}x"))
+            
+            if librosa is None:
+                continue
+                
+            try:
+                stretched = librosa.effects.time_stretch(audio_base, rate=factor)
+                results.append((stretched, f"stretch_{factor:.1f}x"))
+            except Exception:
+                continue
 
     return results
 
