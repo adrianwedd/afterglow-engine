@@ -135,7 +135,7 @@ python make_textures.py --all
 - **Granular Clouds**: Turn any audio into abstract, evolving textures using granular synthesis
 - **Hiss & Air**: Generate high-frequency layers and flicker bursts from drums or synthetic noise
 
-All outputs are optimized for TR-8S import (44.1 kHz, 24-bit or 16-bit WAV).
+All outputs are standard WAVs (44.1 kHz, 24-bit or 16-bit), ready for any sampler or DAW. The defaults are primed for the Roland TR-8S (because it's all we brought with us on vacation).
 
 ## Setup
 
@@ -266,13 +266,15 @@ The tool will:
 3. Generate granular clouds → `export/<source>/clouds/`
 4. Create hiss textures → `export/<source>/hiss/`
 
-### 3. Import to TR-8S
+### 3. Import to Hardware
 
-Copy folders from `export/` to your TR-8S SD card sample folder:
+Copy folders from `export/` to your sampler's SD card:
 
 ```bash
-cp -r export/* /Volumes/TR8S/SAMPLES/
+cp -r export/* /Volumes/SAMPLER/
 ```
+
+(If using a TR-8S, copy to `/Volumes/TR8S/SAMPLES/`)
 
 (Adjust path to match your TR-8S mount point)
 
@@ -296,7 +298,7 @@ All outputs:
 - **Faster Processing**: Run individual steps (`--mine-pads`, `--make-drones`, etc.) as needed rather than `--all`
 - **Adjust Sensitivity**: Tweak thresholds in `config.yaml` (RMS range, onset rate, etc.) to get better pad candidates
 - **Experiment with Variants**: Time-stretch factors and pitch shifts in config multiply the output variations
-- **Layer Textures**: Combine pads + clouds + hiss in your TR-8S sampler for rich, evolving soundscapes
+- **Layer Textures**: Combine pads + clouds + hiss in your sampler or DAW for rich, evolving soundscapes
 
 ## Troubleshooting
 
