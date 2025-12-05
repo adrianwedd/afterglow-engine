@@ -57,6 +57,18 @@ def validate_config(config: dict) -> None:
     if bit_depth not in (16, 24):
         errors.append("global.output_bit_depth must be 16 or 24")
 
+    # Curation
+    curation = config.get("curation", {})
+    if not isinstance(curation.get("auto_delete_grade_f", False), bool):
+        errors.append("curation.auto_delete_grade_f must be boolean")
+    thresh = curation.get("thresholds", {})
+    if not isinstance(thresh.get("min_rms_db", -60.0), (int, float)):
+        errors.append("curation.thresholds.min_rms_db must be a number")
+    if not isinstance(thresh.get("clipping_tolerance", 0.0), (int, float)) or thresh.get("clipping_tolerance", 0.0) < 0:
+        errors.append("curation.thresholds.clipping_tolerance must be a positive number")
+    if not isinstance(thresh.get("max_crest_factor", 1.0), (int, float)) or thresh.get("max_crest_factor", 1.0) <= 0:
+        errors.append("curation.thresholds.max_crest_factor must be a positive number")
+
     if errors:
         for e in errors:
             print(f"[config] {e}", file=sys.stderr)
