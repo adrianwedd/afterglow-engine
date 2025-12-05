@@ -112,7 +112,18 @@ python make_textures.py --all
 - **Hiss/air layers**: hiss loops and flickers with band-pass/high-pass and tremolo options.
 - **Reproducibility & logging**: set `reproducibility.random_seed` for deterministic runs; enable verbose pre-analysis logs via `dsp_utils.set_verbose(True)` (default is quiet).
 
-## What’s New in v0.4 (Stability & Fallback)
+## What's New in v0.6 (The Architect)
+
+- **Musical Awareness**: The engine now listens. It detects the Key and BPM of every source file before processing.
+- **Auto-Transposition**: Set a `target_key` in config (e.g., "C maj") and the machine will pitch-shift your drones and clouds to match.
+- **Perfect Loops**: The "Seamstress" algorithm uses cross-correlation to find the exact phase-aligned loop point, eliminating clicks and wobbles in pads.
+
+## What's New in v0.5 (The Curator)
+
+- **Manifest & Grading**: Every run produces a `manifest.csv` logging musical properties (RMS, Crest, Centroid) and a quality Grade (A/B/F).
+- **Quality Control**: Automatically skip or delete "Grade F" textures (silence, clipping, extreme transients).
+
+## What's New in v0.4 (Stability & Fallback)
 
 - **Quality-aware fallback**: If no windows pass strict stability thresholds, clouds pull grains from the least-onset windows that still pass RMS/DC/crest gates—no more percussive “accidents” when sources are lively.
 - **Keyed stability masks**: Stability caching now tracks threshold sets, so changing onset/RMS/centroid gates always recomputes masks.
@@ -195,7 +206,7 @@ pip install -r requirements.txt
 python make_textures.py --all
 ```
 
-### Detailed Usage (per phase)
+### Detailed Usage
 
 ```bash
 # 1) Mine sustained pads from source_audio/
@@ -221,22 +232,6 @@ Flags:
 - A manifest is written to `export/manifest.csv` when any phase runs. Columns include filename, source, type, duration, RMS/peak/crest, centroid, rough pitch (for tonal types), loop seam error, brightness, and grade.
 - Grades are computed from lightweight thresholds in `curation.thresholds` (config). Set `curation.auto_delete_grade_f: true` to skip saving Grade F files (silence, clipping, extreme crest).
 - Exports keep provenance (`export/<source>/pads|swells|clouds|hiss`). You can build your own “library” view from the manifest (e.g., by brightness or grade) with a simple post-process script.
-
-### Individual Steps
-
-```bash
-# Extract short pads from sustained regions of existing audio
-python make_textures.py --mine-pads
-
-# Generate tonal pad loops and swells with variants
-python make_textures.py --make-drones
-
-# Create granular cloud textures
-python make_textures.py --make-clouds
-
-# Generate hiss loops and flicker bursts
-python make_textures.py --make-hiss
-```
 
 ### View Help
 
