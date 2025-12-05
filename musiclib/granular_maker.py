@@ -115,6 +115,11 @@ def extract_grains(
     use_quality_filter: bool = True,
     min_quality: float = 0.4,
     analyzer: audio_analyzer.AudioAnalyzer = None,
+    max_onset_rate_hz: float = 3.0,
+    min_rms_db: float = -40.0,
+    max_rms_db: float = -10.0,
+    max_dc_offset: float = 0.1,
+    max_crest_factor: float = 10.0,
 ) -> List[np.ndarray]:
     """
     Extract grains from audio with optional quality filtering.
@@ -134,6 +139,11 @@ def extract_grains(
         use_quality_filter: If True, skip low-quality grains
         min_quality: Minimum quality score (0-1) to accept
         analyzer: AudioAnalyzer instance for pre-analysis (optional)
+        max_onset_rate_hz: Max onsets per second to accept (for stable regions)
+        min_rms_db: Minimum RMS level (dB) to accept
+        max_rms_db: Maximum RMS level (dB) to accept
+        max_dc_offset: Maximum DC offset to accept
+        max_crest_factor: Maximum peak/RMS ratio to accept
 
     Returns:
         List of windowed grain audio arrays
@@ -159,7 +169,13 @@ def extract_grains(
     # Prepare stability mask if analyzer provided
     stable_mask = None
     if use_quality_filter and analyzer is not None:
-        stable_mask = analyzer.get_stable_regions()
+        stable_mask = analyzer.get_stable_regions(
+            max_onset_rate=max_onset_rate_hz,
+            rms_low_db=min_rms_db,
+            rms_high_db=max_rms_db,
+            max_dc_offset=max_dc_offset,
+            max_crest=max_crest_factor,
+        )
 
     # Extract grains with optional quality filtering
     attempts = 0
@@ -305,7 +321,10 @@ def create_cloud(
     # Create analyzer only if enabled
     analyzer = None
     if use_pre_analysis:
+        print(f"  [pre-analysis] Analyzing audio: {analysis_window_sec}s window, {analysis_hop_sec}s hop, onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC_offset={max_dc_offset}, crest={max_crest}")
         analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
+    else:
+        print(f"  [pre-analysis] Disabled: using random grain extraction")
 
     # Extract grains with quality filtering and optional pre-analysis
     grains = extract_grains(
@@ -317,6 +336,11 @@ def create_cloud(
         use_quality_filter=True,
         min_quality=quality_threshold,
         analyzer=analyzer,
+        max_onset_rate_hz=max_onset_rate,
+        min_rms_db=min_rms_db,
+        max_rms_db=max_rms_db,
+        max_dc_offset=max_dc_offset,
+        max_crest_factor=max_crest,
     )
 
     if not grains:

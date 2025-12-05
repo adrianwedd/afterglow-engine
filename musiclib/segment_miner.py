@@ -62,6 +62,7 @@ def extract_sustained_segments(
             max_dc_offset = pre_analysis_config.get('max_dc_offset', 0.1)
             max_crest = pre_analysis_config.get('max_crest_factor', 10.0)
 
+            print(f"    [pre-analysis] Analyzing for pad mining: onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC={max_dc_offset}, crest={max_crest}")
             analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
             stable_mask = analyzer.get_stable_regions(
                 max_onset_rate=max_onset_rate,
@@ -70,6 +71,10 @@ def extract_sustained_segments(
                 max_dc_offset=max_dc_offset,
                 max_crest=max_crest,
             )
+        else:
+            print(f"    [pre-analysis] Disabled: using standard sustained segment detection")
+    else:
+        print(f"    [pre-analysis] No config provided; using standard sustained segment detection")
 
     # Compute onset strength
     onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)
@@ -206,6 +211,8 @@ def mine_pads_from_file(
             max_onset_rate=pm_config['max_onset_rate_per_second'],
             spectral_flatness_threshold=pm_config['spectral_flatness_threshold'],
             window_hop_sec=pm_config['window_hop_sec'],
+            use_pre_analysis=True,
+            config=config,
         )
 
         if not candidates:
