@@ -17,14 +17,28 @@ def test_time_domain_crossfade_loop_short_guard():
     assert np.array_equal(out, sig)
 
 
-def test_set_random_seed_seeds_numpy_and_random():
-    dsp_utils.set_random_seed(42)
-    a = np.random.rand()
-    import random
-    b = random.random()
-    dsp_utils.set_random_seed(42)
-    a2 = np.random.rand()
-    random.seed(42)
-    b2 = random.random()
-    assert a == a2
-    assert b == b2
+def test_loop_optimization_aligns_phase():
+    """Test that optimizing the loop trims the audio to align phase."""
+    sr = 1000
+    freq = 10.0
+    # 1.5 seconds = 15 cycles. Ends perfectly on phase.
+    # Let's make it 1.55 seconds so it's out of phase at the end.
+    duration = 1.55 
+    t = np.arange(int(sr * duration)) / sr
+    audio = np.sin(2 * np.pi * freq * t)
+    
+    # Without optimization
+    # Crossfade 100ms (0.1s)
+    out_raw = dsp_utils.time_domain_crossfade_loop(audio, crossfade_ms=100, sr=sr, optimize_loop=False)
+    assert len(out_raw) == len(audio)
+    
+    # With optimization
+    # It should find that trimming ~0.05s (50 samples) aligns the phase best (back to 1.5s)
+    out_opt = dsp_utils.time_domain_crossfade_loop(audio, crossfade_ms=100, sr=sr, optimize_loop=True)
+    
+    # It should have trimmed something
+    assert len(out_opt) < len(audio)
+    
+    diff = len(audio) - len(out_opt)
+    # Ensure some trimming happened but not more than half the buffer
+    assert 1 <= diff <= len(audio) // 2

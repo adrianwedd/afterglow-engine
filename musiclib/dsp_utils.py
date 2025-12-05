@@ -4,6 +4,7 @@ DSP utilities: filters, envelopes, windowing, normalization.
 
 import numpy as np
 from scipy import signal
+import math
 try:
     import librosa
 except ImportError:
@@ -91,6 +92,114 @@ def rms_energy_db(audio: np.ndarray, min_db: float = -80.0) -> float:
 def hann_window(length: int) -> np.ndarray:
     """Create a Hann window."""
     return signal.windows.hann(length, sym=False)
+
+
+def _spectral_centroid(audio: np.ndarray, sr: int) -> float:
+    """Compute spectral centroid using librosa if available, else FFT."""
+    if len(audio) == 0:
+        return 0.0
+    try:
+        if librosa is not None:
+            return float(np.mean(librosa.feature.spectral_centroid(y=audio, sr=sr)))
+    except Exception:
+        pass
+    fft = np.fft.rfft(audio)
+    freqs = np.fft.rfftfreq(len(audio), 1 / sr)
+    mag = np.abs(fft)
+    if np.sum(mag) == 0:
+        return 0.0
+    return float(np.sum(freqs * mag) / np.sum(mag))
+
+
+def estimate_pitch_hz(audio: np.ndarray, sr: int, fmin: float = 30.0, fmax: float = 6000.0) -> float or None:
+    """Rough pitch estimate via dominant FFT bin."""
+    if len(audio) == 0:
+        return None
+    audio = audio - np.mean(audio)
+    if np.max(np.abs(audio)) < 1e-4:
+        return None
+    fft = np.fft.rfft(audio)
+    freqs = np.fft.rfftfreq(len(audio), 1 / sr)
+    mag = np.abs(fft)
+    peak_idx = np.argmax(mag)
+    peak_freq = freqs[peak_idx]
+    if peak_freq < fmin or peak_freq > fmax:
+        return None
+    return float(peak_freq)
+
+
+def compute_audio_metadata(
+    audio: np.ndarray,
+    sr: int,
+    *,
+    brightness_bounds=None,
+    kind: str = None,
+    source: str = None,
+    filename: str = None,
+) -> dict:
+    """
+    Compute lightweight metadata for an audio buffer.
+
+    Returns: filename, source, type, duration_sec, rms_db, peak, crest_factor,
+    centroid_hz, est_freq_hz, loop_error_db, brightness
+    """
+    duration_sec = len(audio) / sr if sr else 0.0
+    rms = rms_energy(audio)
+    rms_db = rms_energy_db(audio)
+    peak = float(np.max(np.abs(audio))) if len(audio) else 0.0
+    crest = float(peak / rms) if rms > 1e-9 else math.inf
+    centroid = _spectral_centroid(audio, sr)
+    est_freq = estimate_pitch_hz(audio, sr) if kind in ("pad", "drone", "swell") else None
+    seam_len = min(len(audio) // 8, 2048)
+    loop_error_db = None
+    if seam_len > 0:
+        head = audio[:seam_len]
+        tail = audio[-seam_len:]
+        diff_rms = rms_energy(head - tail)
+        loop_error_db = 20 * np.log10(diff_rms + 1e-12)
+
+    brightness_tag = None
+    if brightness_bounds is not None:
+        low, high = brightness_bounds
+        brightness_tag = classify_brightness(audio, sr, low, high)
+
+    return {
+        "filename": filename,
+        "source": source,
+        "type": kind,
+        "duration_sec": duration_sec,
+        "rms_db": rms_db,
+        "peak": peak,
+        "crest_factor": crest,
+        "centroid_hz": centroid,
+        "est_freq_hz": est_freq,
+        "loop_error_db": loop_error_db,
+        "brightness": brightness_tag,
+    }
+
+
+def grade_audio(metadata: dict, thresholds: dict) -> str:
+    """
+    Simple grading: F if below minima or clipping; A if well within bounds; else B.
+    thresholds keys: min_rms_db, clipping_tolerance, max_crest_factor.
+    """
+    min_rms = thresholds.get("min_rms_db", -60.0)
+    clip_tol = thresholds.get("clipping_tolerance", 0.0)
+    max_crest = thresholds.get("max_crest_factor", 30.0)
+
+    rms_db = metadata.get("rms_db", -120.0)
+    peak = metadata.get("peak", 0.0)
+    crest = metadata.get("crest_factor", math.inf)
+    loop_err = metadata.get("loop_error_db")
+
+    if rms_db < min_rms or peak >= (1.0 - clip_tol) or crest > max_crest:
+        return "F"
+
+    if rms_db > min_rms + 15 and crest < max_crest * 0.6:
+        if loop_err is None or loop_err < -30:
+            return "A"
+
+    return "B"
 
 
 def crossfade(audio1: np.ndarray, audio2: np.ndarray, fade_length: int) -> np.ndarray:
@@ -276,7 +385,63 @@ def apply_simple_reverb(audio: np.ndarray, decay: float = 0.5, delay_ms: float =
     return output
 
 
-def time_domain_crossfade_loop(audio: np.ndarray, crossfade_ms: float, sr: int) -> np.ndarray:
+def find_best_loop_trim(audio: np.ndarray, fade_length: int, search_window: int = None) -> int:
+    """
+    Find the optimal number of samples to trim from the end to align phase.
+
+    Uses cross-correlation to match the end of the audio with the start.
+
+    Args:
+        audio: Input audio array
+        fade_length: Length of the crossfade (reference size)
+        search_window: How many samples at the end to search (default: 4 * fade_length)
+
+    Returns:
+        Number of samples to trim from the end.
+    """
+    if search_window is None:
+        search_window = 4 * fade_length
+
+    # Ensure search window is valid
+    if search_window > len(audio):
+        search_window = len(audio)
+    if search_window < fade_length:
+        return 0
+
+    # Reference: the start of the loop (we want the end to flow into this)
+    ref = audio[:fade_length]
+    
+    # Search region: the end of the file
+    # We want to find where 'ref' occurs best in the 'search_region'
+    # The search region effectively represents the 'predecessor' to the loop start.
+    search_region = audio[-search_window:]
+
+    # Correlate
+    # Mode 'valid' returns correlations where the signals fully overlap
+    corr = signal.correlate(search_region, ref, mode='valid')
+    
+    if len(corr) == 0:
+        return 0
+
+    # Find best match index
+    # We prefer the match closest to the end of the file (smallest trim).
+    # np.argmax returns the *first* occurrence. 
+    # By reversing, finding argmax, and adjusting, we get the *last* occurrence.
+    best_offset = len(corr) - 1 - np.argmax(corr[::-1])
+    
+    # Calculate trim
+    # best_offset is the index in search_region where the match starts.
+    # We want the file to end exactly where this match starts + fade_length.
+    # So we keep (best_offset + fade_length) samples from the search region.
+    samples_to_keep_in_search = best_offset + fade_length
+    trim_amount = len(search_region) - samples_to_keep_in_search
+    
+    return max(0, trim_amount)
+
+
+def time_domain_crossfade_loop(
+    audio: np.ndarray, crossfade_ms: float, sr: int, optimize_loop: bool = True
+) -> np.ndarray:
     """
     Make audio loopable by crossfading end to beginning.
 
@@ -284,6 +449,7 @@ def time_domain_crossfade_loop(audio: np.ndarray, crossfade_ms: float, sr: int) 
         audio: Input audio
         crossfade_ms: Crossfade duration in milliseconds
         sr: Sample rate
+        optimize_loop: If True, search for optimal phase alignment before crossfading.
 
     Returns:
         Audio with smoothed loop point
@@ -297,6 +463,16 @@ def time_domain_crossfade_loop(audio: np.ndarray, crossfade_ms: float, sr: int) 
     # Clamp crossfade to half the audio length
     if crossfade_samples > len(audio) // 2:
         crossfade_samples = len(audio) // 2
+
+    # Optimization: align phase
+    if optimize_loop:
+        # Search a reasonable window (e.g., up to 200ms or 2x fade)
+        # If we search too far, we might change the musical timing significantly.
+        # Let's default to searching ~4x the fade length or max 500ms.
+        search_limit = min(len(audio) // 2, max(crossfade_samples * 4, int(0.5 * sr)))
+        trim = find_best_loop_trim(audio, crossfade_samples, search_window=search_limit)
+        if trim > 0:
+            audio = audio[:-trim]
 
     fade_out = np.linspace(1, 0, crossfade_samples)
     fade_in = np.linspace(0, 1, crossfade_samples)
