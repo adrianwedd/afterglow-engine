@@ -90,7 +90,8 @@ def make_hiss_loop(
 
     # Make loopable with crossfade
     crossfade_ms = 50
-    hiss = dsp_utils.time_domain_crossfade_loop(hiss, crossfade_ms, sr)
+    # Keep duration stable for hiss; disable seam trimming
+    hiss = dsp_utils.time_domain_crossfade_loop(hiss, crossfade_ms, sr, optimize_loop=False)
 
     # Normalize
     hiss = dsp_utils.normalize_audio(hiss, -6.0)  # Slightly lower than main audio

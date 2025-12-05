@@ -399,6 +399,10 @@ def find_best_loop_trim(audio: np.ndarray, fade_length: int, search_window: int 
     Returns:
         Number of samples to trim from the end.
     """
+    # Ensure mono to avoid accidental multi-channel correlation oddities
+    if audio.ndim > 1:
+        audio = stereo_to_mono(audio)
+
     if search_window is None:
         search_window = 4 * fade_length
 
@@ -410,11 +414,13 @@ def find_best_loop_trim(audio: np.ndarray, fade_length: int, search_window: int 
 
     # Reference: the start of the loop (we want the end to flow into this)
     ref = audio[:fade_length]
+    ref = ref - np.mean(ref)
     
     # Search region: the end of the file
     # We want to find where 'ref' occurs best in the 'search_region'
     # The search region effectively represents the 'predecessor' to the loop start.
     search_region = audio[-search_window:]
+    search_region = search_region - np.mean(search_region)
 
     # Correlate
     # Mode 'valid' returns correlations where the signals fully overlap
@@ -436,7 +442,10 @@ def find_best_loop_trim(audio: np.ndarray, fade_length: int, search_window: int 
     samples_to_keep_in_search = best_offset + fade_length
     trim_amount = len(search_region) - samples_to_keep_in_search
     
-    return max(0, trim_amount)
+    # Safety cap: never trim more than a quarter of the file
+    trim_amount = max(0, trim_amount)
+    trim_amount = min(trim_amount, len(audio) // 4)
+    return trim_amount
 
 
 def time_domain_crossfade_loop(
