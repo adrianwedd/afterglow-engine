@@ -34,45 +34,45 @@ CONFIG = {
     "output_bit_depth": 16,  # 16 or 24
     "target_peak_dbfs": -1.0,
 
-    # Pad mining
-    "pad_window_sec": 2.0,           # Target pad duration
-    "pad_hop_sec": 0.3,              # Hop size for sliding window search
-    "pad_min_rms_db": -35.0,         # Too quiet = reject
-    "pad_max_rms_db": -8.0,          # Too loud = reject
-    "pad_max_onset_rate": 4.0,       # Onsets per second (too high = busy)
-    "pad_crossfade_ms": 80.0,        # Crossfade for loop smoothing
-    "pad_count": 12,                 # Number of pads to extract
+    # Pad mining - ENHANCED: More pads with varied durations
+    "pad_window_sec": 2.0,           # Target pad duration (primary)
+    "pad_hop_sec": 0.3,              # Hop size for sliding window search (more frequent)
+    "pad_min_rms_db": -45.0,         # Too quiet = reject (slightly more permissive)
+    "pad_max_rms_db": -8.0,          # Too loud = reject (more dynamic range)
+    "pad_max_onset_rate": 2.5,       # Onsets per second (stricter = more sustained)
+    "pad_crossfade_ms": 120.0,       # Crossfade for loop smoothing (slightly longer)
+    "pad_count": 24,                 # Number of pads to extract (was 12, now 24)
 
-    # Swells
-    "swell_duration_sec": 5.0,       # Target swell length
-    "swell_fade_in_sec": 0.3,        # Fade-in duration
-    "swell_fade_out_sec": 1.5,       # Fade-out duration
+    # Swells - ENHANCED: Longer, more varied
+    "swell_duration_sec": 10.0,      # Target swell length (was 5.0, now 10.0)
+    "swell_fade_in_sec": 1.0,        # Fade-in duration (was 0.3, now 1.0)
+    "swell_fade_out_sec": 2.5,       # Fade-out duration (was 1.5, now 2.5)
     "swell_time_stretch": 1.3,       # Time-stretch factor (>1 = slower)
-    "swell_count": 6,                # Number of swells to generate
+    "swell_count": 12,               # Number of swells to generate (was 6, now 12)
 
-    # Granular clouds
-    "cloud_duration_sec": 6.0,       # Output cloud length
-    "cloud_grain_min_ms": 50,        # Min grain length
-    "cloud_grain_max_ms": 150,       # Max grain length
-    "cloud_grains_per_cloud": 180,   # Number of grains per cloud
-    "cloud_max_pitch_shift": 8,      # Semitones (±)
-    "cloud_overlap_ratio": 0.65,     # Grain overlap
-    "cloud_lowpass_hz": 8000,        # Post-processing filter (0 = skip)
-    "cloud_count": 6,                # Number of clouds to generate
+    # Granular clouds - ENHANCED: Better quality, more grains, more variation
+    "cloud_duration_sec": 8.0,       # Output cloud length (was 6.0, now 8.0)
+    "cloud_grain_min_ms": 40,        # Min grain length (was 50, now 40)
+    "cloud_grain_max_ms": 120,       # Max grain length (was 150, now 120) - tighter, clearer
+    "cloud_grains_per_cloud": 300,   # Number of grains per cloud (was 180, now 300) - denser
+    "cloud_max_pitch_shift": 12,     # Semitones (±) (was 8, now 12) - wider pitch range
+    "cloud_overlap_ratio": 0.7,      # Grain overlap (was 0.65, now 0.7) - more legato
+    "cloud_lowpass_hz": 10000,       # Post-processing filter (was 8000, now 10000) - less aggressive
+    "cloud_count": 12,               # Number of clouds to generate (was 6, now 12)
 
-    # Hiss/air
-    "hiss_loop_duration_sec": 1.5,   # Hiss loop length
-    "hiss_highpass_hz": 6000,        # High-pass cutoff
-    "hiss_bandpass_low_hz": 5000,    # Band-pass low (if enabled)
-    "hiss_bandpass_high_hz": 14000,  # Band-pass high (if enabled)
+    # Hiss/air - ENHANCED: More variation
+    "hiss_loop_duration_sec": 2.0,   # Hiss loop length (was 1.5, now 2.0)
+    "hiss_highpass_hz": 5500,        # High-pass cutoff (was 6000, now 5500) - slightly less aggressive
+    "hiss_bandpass_low_hz": 4000,    # Band-pass low (was 5000, now 4000) - more presence
+    "hiss_bandpass_high_hz": 15000,  # Band-pass high (was 14000, now 15000) - more air
     "hiss_use_bandpass": True,       # Use band-pass instead of high-pass
     "hiss_tremolo_rate_hz": 2.5,     # Tremolo rate
     "hiss_tremolo_depth": 0.5,       # Tremolo depth (0-1)
     "hiss_crossfade_ms": 50,         # Loop crossfade
-    "hiss_loop_count": 8,            # Number of hiss loops
-    "hiss_flicker_min_ms": 50,       # Min flicker length
-    "hiss_flicker_max_ms": 250,      # Max flicker length
-    "hiss_flicker_count": 4,         # Number of flicker one-shots
+    "hiss_loop_count": 9,            # Number of hiss loops (was 8, now 9)
+    "hiss_flicker_min_ms": 30,       # Min flicker length (was 50, now 30) - shorter flickers
+    "hiss_flicker_max_ms": 500,      # Max flicker length (was 250, now 500) - wider range
+    "hiss_flicker_count": 6,         # Number of flicker one-shots (was 4, now 6)
 }
 
 

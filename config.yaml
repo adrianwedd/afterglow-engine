@@ -1,94 +1,99 @@
-# Global audio settings
-global:
-  sample_rate: 44100          # Sample rate in Hz for all output
-  output_bit_depth: 24        # 16 or 24-bit WAV output
-  target_peak_dbfs: -1.0      # Target peak level for normalization
+# Enhanced Configuration for Solanus - More Variation & Better Results
+# Copy to config.yaml or run with: python make_textures.py --all --config config_enhanced.yaml
 
-# Directory paths
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
 paths:
   source_audio_dir: source_audio
   pad_sources_dir: pad_sources
   drums_dir: drums
   export_dir: export/tr8s
 
-# Pad miner settings (sustained segment extraction)
+# ENHANCED PAD MINER: Extract more pads with varied durations
 pad_miner:
-  target_durations_sec: [2.0, 3.5]      # Target pad durations (seconds) - can be multiple
-  min_rms_db: -40.0                     # Minimum RMS level (dB)
-  max_rms_db: -10.0                     # Maximum RMS level (dB) - too loud = reject
-  max_onset_rate_per_second: 3.0        # Max onsets/sec (too high = too percussive)
-  spectral_flatness_threshold: 0.5      # Lower = more tonal (0-1 scale)
-  max_candidates_per_file: 3            # How many pads to extract per source file
-  loop_crossfade_ms: 100                # Crossfade length for loop smoothing (ms)
-  window_hop_sec: 0.5                   # Hop size for sliding window analysis
+  # Multiple durations for variety
+  target_durations_sec: [1.5, 2.5, 3.5, 4.5]    # 4 different lengths
+  min_rms_db: -45.0                             # Slightly more permissive
+  max_rms_db: -8.0                              # Get more dynamic range
+  max_onset_rate_per_second: 2.5                # Stricter (more sustained)
+  spectral_flatness_threshold: 0.45             # Prefer more tonal material
+  max_candidates_per_file: 6                    # Extract more pads per file (was 3)
+  loop_crossfade_ms: 120                        # Slightly longer crossfade
+  window_hop_sec: 0.3                           # More frequent analysis windows
 
-# Drone / pad / swell maker settings
+# ENHANCED DRONES/SWELLS: Longer, more varied swells
 drones:
   # Pad loop parameters
-  pad_loop_duration_sec: 2.0            # Target duration for loopable pads
+  pad_loop_duration_sec: 2.0
   pad_variants:
-    - warm                               # Low-pass filtered variant
-    - airy                               # High-pass filtered variant
-    - dark                               # Darker, more low-end
+    - warm
+    - airy
+    - dark
 
-  # Tonal filtering for variants
-  warm_lowpass_hz: 3000                 # Warm variant: low-pass cutoff
-  airy_highpass_hz: 6000                # Airy variant: high-pass cutoff
-  dark_high_cut_hz: 1500                # Dark variant: aggressive high-cut
+  # Tonal filtering
+  warm_lowpass_hz: 3500                         # Slightly brighter warm
+  airy_highpass_hz: 5500                        # Slightly warmer airy
+  dark_high_cut_hz: 1200                        # Even darker dark
 
-  # Swell parameters
-  swell_duration_sec: 6.0               # Target duration for swell one-shots
-  fade_in_sec: 0.5                      # Fade-in duration for swells
-  fade_out_sec: 1.5                     # Fade-out duration for swells
+  # ENHANCED: More and longer swells with more variation
+  swell_duration_sec: 10.0                      # Longer base swell (was 6.0)
+  fade_in_sec: 1.0                              # Longer fade-in
+  fade_out_sec: 2.5                             # Longer fade-out (now 3.5s total ramp)
 
-  # Processing options
-  pitch_shift_semitones: [0, 7, 12]     # Pitch shifts to apply (semitones)
-  time_stretch_factors: [1.0, 1.5, 2.0]  # Time-stretch factors (1.0 = original)
-  enable_reversal: true                 # Whether to create reversed variants
+  # MORE variations
+  pitch_shift_semitones: [0, 5, 7, 12, -5]      # 5 pitch variants (was 3)
+  time_stretch_factors: [1.0, 1.2, 1.5, 2.0]    # 4 stretch factors (was 3)
+  enable_reversal: true
 
-# Granular cloud settings
+# ENHANCED CLOUDS: Better source selection + more variations
 clouds:
-  grain_length_min_ms: 50               # Minimum grain length
-  grain_length_max_ms: 150              # Maximum grain length
-  grains_per_cloud: 200                 # Number of grains per cloud
-  cloud_duration_sec: 6.0               # Target output duration
-  pitch_shift_range:                    # Pitch shift range for grains (semitones)
-    min: -8                             # Minimum pitch shift (negative = lower)
-    max: 8                              # Maximum pitch shift (positive = higher)
-  overlap_ratio: 0.65                   # Grain overlap (0.5-1.0)
-  lowpass_hz: 8000                      # Post-processing low-pass (optional)
-  clouds_per_source: 2                  # Number of cloud variations per source
+  # Slightly shorter grains for better clarity
+  grain_length_min_ms: 40                       # Shorter min
+  grain_length_max_ms: 120                      # Shorter max (tighter, punchier)
 
-# Hiss / air texture settings
+  # More grains for denser texture
+  grains_per_cloud: 300                         # More grains (was 200)
+
+  # Longer output for more development
+  cloud_duration_sec: 8.0                       # Longer cloud (was 6.0)
+
+  # Wider pitch range for more extreme variation
+  pitch_shift_range:
+    min: -12                                    # Lower bound (was -8)
+    max: 12                                     # Upper bound (was 8)
+
+  overlap_ratio: 0.7                            # Slightly more overlap for legato
+  lowpass_hz: 10000                             # Less aggressive filtering
+  clouds_per_source: 4                          # More clouds (was 2)
+
+# ENHANCED HISS: More options
 hiss:
-  # Hiss loop parameters
-  loop_duration_sec: 1.5                # Duration of hiss loops
-  highpass_hz: 6000                     # High-pass cutoff for noise
-  bandpass_low_hz: 5000                 # Band-pass low cutoff (Hz)
-  bandpass_high_hz: 14000               # Band-pass high cutoff (Hz)
-  use_bandpass: true                    # Use band-pass instead of high-pass
-  tremolo_rate_hz: 3.0                  # Amplitude modulation rate
-  tremolo_depth: 0.6                    # Tremolo depth (0-1)
-  hiss_loops_per_source: 2              # Number of hiss loop variants
+  loop_duration_sec: 2.0                        # Longer loops
+  highpass_hz: 5500                             # Slightly less aggressive
+  bandpass_low_hz: 4000                         # Lower for more presence
+  bandpass_high_hz: 15000                       # Higher for more air
+  use_bandpass: true
+  tremolo_rate_hz: 2.5                          # Slower modulation
+  tremolo_depth: 0.5                            # Slightly subtler
+  hiss_loops_per_source: 3                      # More variations (was 2)
 
-  # Flicker burst parameters
-  flicker_min_ms: 50                    # Minimum flicker duration
-  flicker_max_ms: 300                   # Maximum flicker duration
-  flicker_count: 4                      # Number of flicker one-shots to generate
+  flicker_min_ms: 30
+  flicker_max_ms: 500                           # Wider range
+  flicker_count: 6                              # More flickers (was 4)
 
-  # Synthetic noise fallback
-  use_synthetic_noise: true             # Use white noise if no drum files
-  synthetic_noise_level_db: -10.0       # dB level for synthetic noise
+  use_synthetic_noise: true
+  synthetic_noise_level_db: -12.0               # Slightly quieter base
 
-# Export settings (stereo vs mono per category)
 export:
-  pads_stereo: false                    # Export pads as stereo (default: mono)
-  swells_stereo: false                  # Export swells as stereo (default: mono)
-  clouds_stereo: false                  # Export clouds as stereo (default: mono)
-  hiss_stereo: false                    # Export hiss as stereo (default: mono)
+  pads_stereo: false
+  swells_stereo: false
+  clouds_stereo: true                           # ENHANCED: Stereo clouds for width
+  hiss_stereo: true                             # ENHANCED: Stereo hiss for width
 
-# Brightness tagging settings (dark/mid/bright based on spectral centroid)
 brightness_tags:
-  enabled: true                         # Enable brightness tagging in filenames
-  centroid_low_hz: 1500                 # Centroid below this = "dark"
-  centroid_high_hz: 3500                # Centroid above this = "bright"; between = "mid"
+  enabled: true
+  centroid_low_hz: 1200
+  centroid_high_hz: 4000
