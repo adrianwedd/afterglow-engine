@@ -195,6 +195,33 @@ pip install -r requirements.txt
 python make_textures.py --all
 ```
 
+### Detailed Usage (per phase)
+
+```bash
+# 1) Mine sustained pads from source_audio/
+python make_textures.py --mine-pads
+
+# 2) Turn pad_sources/ into loops + swells
+python make_textures.py --make-drones
+
+# 3) Build granular clouds from pad_sources/
+python make_textures.py --make-clouds
+
+# 4) Generate hiss/flickers from drums/ (or synthetic fallback)
+python make_textures.py --make-hiss
+```
+
+Flags:
+- `--config <path>` to point at a different YAML.
+- Set `reproducibility.random_seed` in the config for deterministic runs.
+- Enable verbose pre-analysis logs: call `dsp_utils.set_verbose(True)` in a small wrapper if you need to debug stability masks.
+
+### Curation & Manifest (v0.5)
+
+- A manifest is written to `export/manifest.csv` when any phase runs. Columns include filename, source, type, duration, RMS/peak/crest, centroid, rough pitch (for tonal types), loop seam error, brightness, and grade.
+- Grades are computed from lightweight thresholds in `curation.thresholds` (config). Set `curation.auto_delete_grade_f: true` to skip saving Grade F files (silence, clipping, extreme crest).
+- Exports keep provenance (`export/<source>/pads|swells|clouds|hiss`). You can build your own “library” view from the manifest (e.g., by brightness or grade) with a simple post-process script.
+
 ### Individual Steps
 
 ```bash
