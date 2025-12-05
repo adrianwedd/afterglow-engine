@@ -52,7 +52,7 @@ python make_textures.py --help
 A minimal test suite is available to verify the core functionality.
 
 ```bash
-python test_review_fixes.py
+python archive/scripts/test_review_fixes.py
 ```
 
 ## Project Structure
@@ -67,11 +67,11 @@ python test_review_fixes.py
 │   ├── audio_analyzer.py # Audio analysis and quality scoring
 │   ├── drone_maker.py    # Generates pad loops and swells
 │   ├── granular_maker.py # Granular cloud generator
-│   ├── hiss_maker.py     # Hiss loops and flicker bursts
+│   ├── hiss_maker.py     # Hiss loops & flicker bursts
 │   └── segment_miner.py  # Mines sustained pad segments
 ├── source_audio/         # Input audio for pad mining
 ├── pad_sources/          # Input audio for drone and cloud generation
-├── drums/                # Input audio for hiss generation
+├── drums/                # Percussive material for hiss generation
 └── export/tr8s/          # Output directory for generated samples
 ```
 
