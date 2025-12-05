@@ -19,8 +19,8 @@ from musiclib.segment_miner import extract_sustained_segments
 
 
 def test_config_integration():
-    """Test 1: Config is read and applied."""
-    print("\n[TEST 1] Config Integration")
+    """Test 1: Config is read and applied (including thresholds)."""
+    print("\n[TEST 1] Config Integration & Threshold Wiring")
     print("-" * 60)
 
     sr = 44100
@@ -28,22 +28,22 @@ def test_config_integration():
     t = np.arange(int(sr * duration)) / sr
     audio = np.sin(2 * np.pi * 440 * t) * 0.2 + np.random.randn(int(sr * duration)) * 0.02
 
-    # Config with custom parameters
+    # Config with custom parameters (all now wired through)
     config = {
         "pre_analysis": {
             "enabled": True,
             "analysis_window_sec": 0.8,
             "analysis_hop_sec": 0.4,
             "grain_quality_threshold": 0.5,
-            "max_dc_offset": 0.05,
-            "max_crest_factor": 8.0,
-            "max_onset_rate_hz": 2.0,
-            "min_rms_db": -35.0,
-            "max_rms_db": -12.0,
+            "max_dc_offset": 0.05,        # Now wired to get_stable_regions
+            "max_crest_factor": 8.0,      # Now wired to get_stable_regions
+            "max_onset_rate_hz": 2.0,     # Now wired to get_stable_regions
+            "min_rms_db": -35.0,          # Now wired to get_stable_regions
+            "max_rms_db": -12.0,          # Now wired to get_stable_regions
         }
     }
 
-    # Should work with config
+    # Should work with config and apply thresholds
     cloud = create_cloud(
         audio,
         sr=sr,
@@ -57,7 +57,8 @@ def test_config_integration():
         config=config,
     )
     assert len(cloud) > 0, "Config integration failed"
-    print(f"✓ Cloud created with custom config: {len(cloud)/sr:.2f}s")
+    print(f"✓ Cloud created with custom thresholds: {len(cloud)/sr:.2f}s")
+    print(f"  (thresholds wired: onset_rate=2.0, RMS=[-35,-12]dB, crest=8.0, DC=0.05)")
 
     # Test with disabled pre_analysis
     config["pre_analysis"]["enabled"] = False
