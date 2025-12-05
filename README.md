@@ -1,6 +1,105 @@
 # Music Texture Tool
 
-A Python-based tool for preparing sound-design material for electronic music workflows (specifically for the Roland TR-8S). Creates loopable pads, evolving swells, granular clouds, and high-frequency textures from your existing audio and synthesis.
+Imagine this:
+
+In a back room of your studio, you’ve secretly built a machine.
+
+It doesn’t paint.  
+It doesn’t choose subjects.  
+It never tells you what to do with the canvas.
+
+All it does is this:
+
+You slide in your old work—finished canvases, abandoned panels, primed boards with ghosts of sketches under the gesso, photos of murals that no longer exist, even quick studies on cheap paper you once did just to get your hand moving.
+
+Inside, the machine:
+
+* very carefully **unweaves** each piece,
+* separates pigment from gesture,
+* peels off glazes from underpainting,
+* collects tiny flakes of colour from places no one ever really looked at.
+
+It doesn’t keep compositions.  
+It doesn’t remember figures or horizons.
+
+It just saves **texture and colour**:
+
+* a particular bruised green that only ever happened once when two paints misbehaved together,
+* the way a translucent violet settled into the tooth of the canvas,
+* that dry, scratchy ochre from a brush you forgot to clean,
+* the chalky margin where gesso met raw linen.
+
+Then it grinds those fragments down and re-bottles them into small, unlabelled jars:
+
+* “evening wall light,”
+* “wet concrete after a storm,”
+* “skin in winter,”
+* “dust on a forgotten windowsill.”
+
+On your main table, nothing has changed:  
+It’s still you, blank surface, brushes, knives, rags.
+
+The only difference is your palette.
+
+Now, when you reach for colour, you’re not just squeezing paint from factory tubes—you’re dipping into **distilled memories of your own work**:
+
+* the atmosphere from a painting you sold years ago,
+* the softness from a figure you painted over,
+* the strange, accidental pink from a ruined canvas that still haunts you.
+
+What we’ve built is that quiet machine:  
+a patient studio assistant that wanders through your archives, gently steals back the colours and surfaces you’ve already invented, and lays them out again as fresh pigment.
+
+So future paintings are not just new images.  
+They’re painted with **the ground-up archaeology of everything you’ve ever touched.**
+
+This tool is that idea, implemented in code for sound. It doesn’t make creative choices; it just mines, processes, and re-bottles audio so you can paint with your own sonic pigment. Under the hood, it:
+- mines sustained pad segments from your archive (RMS/onset/tonality + optional pre-analysis of stable regions),
+- generates loopable pads/swells with tonal variants and reversals,
+- builds granular “clouds” with quality-filtered grains, brightness tagging, stereo export, and deterministic seeding if desired,
+- creates hiss/air layers and flickers,
+- exports TR-8S-ready WAVs (44.1 kHz, 16/24-bit) with per-category stereo/mono control.
+
+Nothing here paints for you. It just lays out fresh jars of your own textures, ready for whatever canvas you choose next.
+
+## Quick Start (quiet, deterministic)
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Optional: reproducible runs
+# In config.yaml, set:
+# reproducibility:
+#   random_seed: 42
+
+python make_textures.py --make-clouds        # or --all
+```
+
+## What’s New in the Machine (v0.3)
+
+- **Pre-analysis of your archive**: finds stable regions (low onset, sane RMS, low DC/crest), filters grains/pads by quality, and tags brightness. You can toggle it off or tune it in `pre_analysis` (window/hop, RMS/onset/DC/crest thresholds, grain quality, enabled flag).
+- **Granular clouds, refined**: per-grain length variation, quality-scored grains, adaptive pitch-shift (no tiny-grain artifacts), stereo export, brightness tags, optional seeds for repeatability.
+- **Pad mining, aligned**: pad extraction uses the same stability criteria as clouds when pre-analysis is enabled; brightness tags and stereo/mono export are configurable.
+- **Hiss/air layers**: hiss loops and flickers with band-pass/high-pass and tremolo options.
+- **Reproducibility & logging**: set `reproducibility.random_seed` for deterministic runs; enable verbose pre-analysis logs via `dsp_utils.set_verbose(True)` (default is quiet).
+
+## Where Everything Lives
+
+- **Source & scripts**: code and configs live here in the root (`musiclib/`, `make_textures.py`, `config.yaml`).
+- **Archived docs**: detailed guides, reviews, and batch workflow docs now live in `archive/docs/` (e.g., `CONFIG_QUICK_REFERENCE.md`, `UPGRADES.md`, `BATCH_WORKFLOW.md`, summaries).
+- **Archived audio sources**: large example/legacy audio folders are under `archive/audio_sources/` (kept out of the way for GitHub).
+
+## Testing (smoke & verification)
+
+- Minimal regression suite: `python test_review_fixes.py` (uses the current venv; covers pre-analysis wiring, stability masks, pitch-shift guards, logging toggles, and threshold effects).
+- Determinism: set `reproducibility.random_seed` in your config to make test runs repeatable.
+
+## Dependencies & Notes
+
+- **librosa** is required for pitch shifting and some analysis paths; if it’s absent, those paths fail gracefully (cloud pitch-shift is skipped), but install the full requirements for intended behavior.
+- Exports are TR-8S-ready WAVs (44.1 kHz, 16/24-bit) with per-category stereo/mono control via `export` config.
 
 ## Features
 
