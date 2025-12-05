@@ -209,7 +209,30 @@ def extract_grains(
             if result is not None:
                 start, _ = result
             else:
-                # Fallback to random if stable sampling fails
+                # Fallback: if strict sampling failed (e.g. runs too short), try soft fallback
+                sorted_windows = analyzer.get_sorted_windows()
+                if len(sorted_windows) > 0:
+                    top_n = max(1, len(sorted_windows) // 5) # Top 20%
+                    best_windows = sorted_windows[:top_n]
+                    window_idx = np.random.choice(best_windows)
+                    start, _ = analyzer.get_sample_range_for_window(window_idx)
+                    # Add small random offset within the window
+                    offset = np.random.randint(0, max(1, int(analyzer.hop_sec * sr)))
+                    start = min(start + offset, len(audio) - grain_length)
+                else:
+                    start = np.random.randint(0, max(1, max_start - grain_length + 1))
+        elif use_quality_filter and analyzer is not None:
+            # Soft fallback: if mask was empty, pick from top 20% "best" windows
+            sorted_windows = analyzer.get_sorted_windows()
+            if len(sorted_windows) > 0:
+                top_n = max(1, len(sorted_windows) // 5) # Top 20%
+                best_windows = sorted_windows[:top_n]
+                window_idx = np.random.choice(best_windows)
+                start, _ = analyzer.get_sample_range_for_window(window_idx)
+                # Add small random offset within the window
+                offset = np.random.randint(0, max(1, int(analyzer.hop_sec * sr)))
+                start = min(start + offset, len(audio) - grain_length)
+            else:
                 start = np.random.randint(0, max(1, max_start - grain_length + 1))
         else:
             start = np.random.randint(0, max(1, max_start - grain_length + 1))
@@ -238,6 +261,8 @@ def apply_pitch_shift_grain(
     sr: int,
     min_shift_semitones: float,
     max_shift_semitones: float,
+    min_grain_length_samples: int = 256,
+    max_rate: float = 2.0,
 ) -> np.ndarray:
     """
     Apply random pitch shift to a grain using resampling (tape speed effect).
@@ -257,6 +282,10 @@ def apply_pitch_shift_grain(
     if min_shift_semitones == 0 and max_shift_semitones == 0:
         return grain
 
+    # Skip pitch-shift for very short grains to avoid artifacts and extreme resample rates
+    if len(grain) < min_grain_length_samples:
+        return grain
+
     shift = np.random.uniform(min_shift_semitones, max_shift_semitones)
     if shift == 0:
         return grain
@@ -269,14 +298,13 @@ def apply_pitch_shift_grain(
     # rate > 1.0 = pitch up (shorter)
     # rate < 1.0 = pitch down (longer)
     rate = 2.0 ** (shift / 12.0)
+    # Clamp rate to avoid extreme resampling (CPU and density impact)
+    rate = max(1.0 / max_rate, min(max_rate, rate))
 
     try:
-        # We want to change the speed.
-        # Pitch UP (rate=2): We want half the samples. target_sr = sr / 2?
-        # Resample from 44k to 22k gives half samples.
-        # Pitch DOWN (rate=0.5): We want double samples. target_sr = sr / 0.5 = 88k.
-        # Resample from 44k to 88k gives double samples.
-        return librosa.resample(grain, orig_sr=sr, target_sr=sr / rate)
+        # Resample using clamped rate
+        resampled = librosa.resample(grain, orig_sr=sr, target_sr=sr / rate)
+        return resampled
     except Exception:
         return grain
 
@@ -411,6 +439,11 @@ def create_cloud(
     peak = np.max(np.abs(cloud))
     if peak > 0:
         cloud = cloud / peak * 0.95
+
+    # Apply short fade in/out to prevent clicks
+    fade_samples = int(0.01 * sr) # 10ms
+    cloud = dsp_utils.apply_fade_in(cloud, fade_samples)
+    cloud = dsp_utils.apply_fade_out(cloud, fade_samples)
 
     return cloud
 

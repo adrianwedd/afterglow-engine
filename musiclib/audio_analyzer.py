@@ -191,11 +191,8 @@ class AudioAnalyzer:
         Returns:
             Boolean mask (length = number of windows) indicating stable regions
         """
-        if self._stability_mask is not None:
-            # Note: caching prevents re-running with different thresholds on the same instance.
-            # If different thresholds are needed, a new analyzer should be created or logic updated.
-            # For now, we assume one set of thresholds per file processing pass.
-            return self._stability_mask
+        # Note: We do NOT cache self._stability_mask anymore because thresholds can change per call.
+        # Recomputing the boolean mask is fast (vectorized) compared to the pre-computations.
 
         # Get all metrics
         rms = self._compute_rms_curve()
@@ -235,6 +232,38 @@ class AudioAnalyzer:
 
         self._stability_mask = mask
         return mask
+
+    def get_sorted_windows(self) -> np.ndarray:
+        """
+        Return window indices sorted by stability (most stable first).
+        
+        Primary ranking metric: Onset density (ascending).
+        Secondary ranking metric: RMS energy (distance from -24dB ideal).
+
+        Returns:
+            Array of window indices.
+        """
+        onset_frames = self._compute_onset_density()
+        rms = self._compute_rms_curve()
+        
+        window_onset_counts = []
+        window_rms_scores = []
+        
+        for i, start in enumerate(range(0, len(self.audio) - self.window_size_samples + 1, self.hop_samples)):
+            end = start + self.window_size_samples
+            
+            # Onset count
+            count = np.sum((onset_frames >= start) & (onset_frames < end))
+            window_onset_counts.append(count)
+            
+            # RMS score: distance from ideal -24dB (lower distance is better)
+            # We use the already computed window RMS
+            dist = abs(rms[i] - (-24.0))
+            window_rms_scores.append(dist)
+            
+        # Lexical sort: primary=onsets (ascending), secondary=rms_dist (ascending)
+        # np.lexsort sorts by last key first, so we pass (rms, onsets)
+        return np.lexsort((window_rms_scores, window_onset_counts))
 
     def get_sample_range_for_window(self, window_idx: int) -> Tuple[int, int]:
         """

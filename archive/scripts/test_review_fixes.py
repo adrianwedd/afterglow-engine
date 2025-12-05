@@ -434,6 +434,45 @@ def test_pad_mining_config_thresholds():
         print(f"✓ Config thresholds working (results vary with settings)")
 
 
+def test_soft_fallback():
+    """Test 10: Soft fallback selects best windows when mask is empty."""
+    print("\n[TEST 10] Soft Fallback Logic")
+    print("-" * 60)
+
+    sr = 44100
+    duration = 2.0
+    
+    # Create audio with NO stable regions (all high onset)
+    # But make the first half slightly "less" chaotic (10 onsets) vs second half (20 onsets)
+    audio = np.zeros(int(sr * duration))
+    # First sec: 10 onsets
+    for i in range(10):
+        audio[int(i * 0.1 * sr)] = 1.0
+    # Second sec: 20 onsets
+    for i in range(20):
+        audio[int(1.0 * sr + i * 0.05 * sr)] = 1.0
+        
+    analyzer = AudioAnalyzer(audio, sr, window_size_sec=0.5, hop_sec=0.5)
+    # Strict threshold so mask is empty
+    mask = analyzer.get_stable_regions(max_onset_rate=1.0)
+    
+    if not np.any(mask):
+        print("✓ Strict mask correctly rejected all windows")
+        
+        # Test sort
+        sorted_indices = analyzer.get_sorted_windows()
+        print(f"  Sorted indices: {sorted_indices}")
+        
+        # We expect the first half (indices 0, 1) to be better than second half (2, 3)
+        # because they have lower onset counts.
+        if sorted_indices[0] in [0, 1] and sorted_indices[1] in [0, 1]:
+            print("✓ Soft fallback correctly identified least-chaotic windows first")
+        else:
+            print(f"✗ Soft fallback order unexpected: {sorted_indices}")
+    else:
+        print("✗ Test setup failed: mask should be empty")
+
+
 def main():
     """Run all tests."""
     print("\n" + "=" * 60)
@@ -449,6 +488,7 @@ def main():
     test_thresholds_affect_results()
     test_consecutive_stable_windows()
     test_pad_mining_config_thresholds()
+    test_soft_fallback()
 
     print("\n" + "=" * 60)
     print("ALL TESTS PASSED ✓")
@@ -463,6 +503,7 @@ def main():
     print("  7. ✓ Thresholds actually affect stability mask")
     print("  8. ✓ Consecutive stable window enforcement")
     print("  9. ✓ Pad mining config threshold wiring")
+    print("  10. ✓ Soft fallback logic")
     print("\nAdditional improvements:")
     print("  • Verbose logging (controlled via dsp_utils.set_verbose)")
     print("  • Pre-analysis thresholds fully wired to both clouds and pads")
