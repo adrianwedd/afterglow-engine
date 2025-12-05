@@ -1,6 +1,6 @@
-# Configuration Quick Reference v0.2
+# Configuration Quick Reference (v0.6)
 
-Quick lookup guide for all configuration options. For details, see `config.yaml` and `UPGRADES.md`.
+Quick lookup guide for the key configuration blocks. See `config.yaml` and `CHANGELOG.md` for full details.
 
 ---
 
@@ -19,8 +19,8 @@ global:
 
 ```yaml
 pad_miner:
-  target_durations_sec: [2.0, 3.5]      # ⭐ NEW: Multiple durations (list)
-  loop_crossfade_ms: 100                # ⭐ NEW: Loop smoothing (ms)
+  target_durations_sec: [2.0, 3.5]      # Multiple durations (list)
+  loop_crossfade_ms: 100                # Loop smoothing (ms)
 
   min_rms_db: -40.0                     # Min loudness threshold
   max_rms_db: -10.0                     # Max loudness threshold
@@ -95,7 +95,7 @@ clouds:
   grains_per_cloud: 200                 # Grains per cloud
   cloud_duration_sec: 6.0               # Cloud length
 
-  pitch_shift_range:                    # ⭐ NEW: Min/max pitch shift
+  pitch_shift_range:                    # Min/max pitch shift
     min: -8                             # Lower bound (semitones)
     max: 8                              # Upper bound (semitones)
 
@@ -180,7 +180,7 @@ flicker_count: 8
 ## Export Settings
 
 ```yaml
-export:                                 # ⭐ NEW: Stereo/mono control
+export:                                 # Stereo/mono control
   pads_stereo: false                    # Mono pads (default)
   swells_stereo: false                  # Mono swells (default)
   clouds_stereo: false                  # Mono clouds (default)
@@ -204,7 +204,7 @@ swells_stereo: true
 ## Brightness Tagging
 
 ```yaml
-brightness_tags:                        # ⭐ NEW: Dark/mid/bright tags
+brightness_tags:                        # Dark/mid/bright tags
   enabled: true                         # Enable tagging
   centroid_low_hz: 1500                 # Dark ↔ mid threshold
   centroid_high_hz: 3500                # Mid ↔ bright threshold
@@ -231,10 +231,10 @@ enabled: false
 
 ---
 
-## Curation Settings
+## Curation & Manifest (v0.5)
 
 ```yaml
-curation:                               # ⭐ NEW: v0.5 Quality Control
+curation:
   auto_delete_grade_f: false            # Delete "Fail" textures immediately?
   thresholds:
     min_rms_db: -60.0                   # Silence threshold
@@ -244,14 +244,24 @@ curation:                               # ⭐ NEW: v0.5 Quality Control
 
 ---
 
+## Musicality (v0.6)
+
+```yaml
+musicality:
+  reference_bpm: "detect"               # "detect" or a number (e.g., 120)
+  snap_to_grid: false                   # If true, bar_lengths converted to seconds using BPM
+  bar_lengths: [1, 2, 4]                # Bars to target when snapping
+  target_key: null                      # e.g., "C maj" to auto-transpose; null to keep detected
+```
+
 ## Directory Paths
 
 ```yaml
 paths:
   source_audio_dir: source_audio        # Input: scan for pads
-  pad_sources_dir: pad_sources          # Input: drone material
+  pad_sources_dir: pad_sources          # Input: drone/cloud material
   drums_dir: drums                      # Input: hiss material
-  export_dir: export/tr8s               # Output: TR-8S-ready files
+  export_dir: export                    # Output root
 ```
 
 ---

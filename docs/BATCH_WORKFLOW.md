@@ -8,7 +8,7 @@ The workflow consists of three main phases:
 
 1. **Discovery** (`discover_audio.py`) – Find all audio files in the repo
 2. **Selection** (`select_sources.py`) – Filter and score candidates based on rules
-3. **Batch Processing** (`batch_generate_textures.py`) – Generate textures for each selected track
+3. **Batch Processing** (`batch_generate_textures.py`) – Generate textures for each selected track (pads, swells, clouds, hiss) and emit a manifest
 
 Each phase is independent and can be run separately or as a complete pipeline.
 
@@ -30,17 +30,12 @@ python batch_generate_textures.py --sources selected_sources.csv
 When complete, textures will be in:
 ```
 export/by_source/
-  ├── 01_vainqueur_solanus_extracted_2/
+  ├── <source_name>/
   │   ├── pads/
   │   ├── swells/
   │   ├── clouds/
   │   └── hiss/
-  ├── mr_cloudy_track_01/
-  │   ├── pads/
-  │   ├── swells/
-  │   ├── clouds/
-  │   └── hiss/
-  └── ...
+  └── manifest.csv
 ```
 
 ---
@@ -665,4 +660,3 @@ For 100 tracks: ~30–50 minutes
 - **CONFIG_QUICK_REFERENCE.md** – Configuration options reference
 - **IMPLEMENTATION_SUMMARY.md** – Technical details of v0.2 upgrade
 - **README.md** – Main project documentation
-
