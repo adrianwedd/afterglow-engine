@@ -4,10 +4,10 @@
 
 ---
 
-## Unreleased (The Hardening)
+## v0.4 (The Machine)
 *The frame is tightened.*
 
-A focus on resilience. Ensuring the machine does not break when fed silence, shadows, or unexpected forms.
+A focus on resilience. Ensuring the machine does not break when fed silence, shadows, or unexpected forms. The documentation now reflects the philosophy of the tool.
 
 **Technical Details:**
 *   **Safety Guards:**
@@ -25,9 +25,11 @@ A focus on resilience. Ensuring the machine does not break when fed silence, sha
     *   Added `tests/test_integration.py` for full end-to-end pipeline verification.
     *   Added `tests/test_dsp_utils.py` for unit testing core math.
     *   Added `pytest` to requirements.
-*   **Housekeeping:**
-    *   Removed redundant `granular_maker_improved.py`.
-    *   Moved legacy scripts and documentation to `archive/`.
+*   **Documentation:**
+    *   Reorganized documentation into `docs/` and `archive/`.
+    *   Added `CONTRIBUTING.md` with clear guidelines and philosophical tone.
+    *   Aligned agent contexts (`GEMINI.md`, `CLAUDE.md`, `AGENTS.md`) with the project's "sonic archaeology" metaphor.
+    *   Added ASCII art logo to `README.md`.
 
 ---
 
