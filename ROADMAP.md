@@ -12,19 +12,16 @@ The future of the machine is **intelligence**. It must learn to separate the cla
 
 ---
 
-## Phase 1: The Curator (v0.5)
+## Phase 1: The Curator (v0.5) — Completed
 *Quality Control & Reporting.*
 
-The machine currently generates blindly. We will give it the ability to reflect on its own output.
+Shipped:
+* Manifest CSV with per-file stats (RMS/crest/centroid/rough pitch/loop seam).
+* Configurable grading (Grade F skip optional), brightness tagging, provenance-preserving export.
+* Safer loops (phase-aware trim with guards) and relaxed defaults.
 
-*   **Manifest Generation**: Produce a `manifest.csv` along with the audio.
-    *   Columns: `Source File`, `Texture Type`, `Duration`, `RMS`, `Crest Factor`, `Brightness`, `Key Estimate` (simple FFT peak).
-*   **Auto-Grading**:
-    *   Analyze generated textures.
-    *   Flag or auto-delete "Grade F" outputs (silence, digital clipping, extreme noise).
-    *   Tag "Grade A" outputs (perfect stability, rich harmonic content).
-*   **Structure**:
-    *   Move from flat folders to intelligent sorting (e.g., `export/Pads/Dark/`, `export/Clouds/Bright/`).
+Remaining nice-to-haves:
+* Optional “library view” script that re-sorts exports by brightness/grade using the manifest.
 
 ## Phase 2: The Architect (v0.6)
 *Musical Awareness.*

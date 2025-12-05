@@ -20,6 +20,20 @@ The engine now audits its own work. It no longer blindly saves everything; it me
 
 ---
 
+## v0.5 (The Curator)
+*Metadata, grading, and a manifest.*
+
+Clouds and pads now report what they are, not just how they sound.
+
+**Highlights:**
+*   **Manifest:** `export/manifest.csv` records filename, source, type, duration, RMS/peak/crest, centroid, rough pitch (tonal), loop seam error, brightness, and grade.
+*   **Grading & Curation:** Configurable thresholds; optional auto-delete of Grade F (silence/clipping/harsh crest). Applies to pads, drones/swells, clouds, hiss.
+*   **Safer Loops:** Phase-aware loop trimming with mono guard and trim caps; hiss crossfades skip optimization to preserve timing.
+*   **Defaults:** Relaxed stability thresholds out-of-box; config validation tightened (analysis window/hop, overlap ratio).
+*   **Docs:** README usage expanded; curation config documented.
+
+---
+
 ## v0.4 (The Frame)
 *Stability, not drift.*
 
