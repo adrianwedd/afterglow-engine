@@ -26,19 +26,7 @@ The machine currently generates blindly. We will give it the ability to reflect 
 *   **Structure**:
     *   Move from flat folders to intelligent sorting (e.g., `export/Pads/Dark/`, `export/Clouds/Bright/`).
 
-## Phase 2: The Prism (v0.6)
-*Source Separation.*
-
-The greatest challenge is the presence of percussion in tonal sources. We will integrate AI source separation to split the light from the shadow.
-
-*   **Integration**: Add optional support for **Demucs** or a lightweight alternative.
-*   **Workflow**:
-    *   Input File → [Separator] → `{Drums, Bass, Other}`.
-    *   Feed `Drums` → **Hiss Maker** (infinite dust).
-    *   Feed `Other` → **Cloud/Drone Maker** (pure tonal texture without transient artifacts).
-*   **Impact**: This turns "lucky accidents" into reliable, clean sampling.
-
-## Phase 3: The Architect (v0.7)
+## Phase 2: The Architect (v0.6)
 *Musical Awareness.*
 
 The machine will stop treating audio as raw signal and start treating it as music.
@@ -54,6 +42,18 @@ The machine will stop treating audio as raw signal and start treating it as musi
 *   **Perfect Loops**:
     *   Replace arbitrary crossfades with **zero-crossing detection** and **autocorrelation**.
     *   Find the mathematical "seam" where the loop is invisible.
+
+## Phase 3: The Prism (v0.7)
+*Source Separation.*
+
+The greatest challenge is the presence of percussion in tonal sources. We will integrate AI source separation to split the light from the shadow.
+
+*   **Integration**: Add optional support for **Demucs** or a lightweight alternative.
+*   **Workflow**:
+    *   Input File → [Separator] → `{Drums, Bass, Other}`.
+    *   Feed `Drums` → **Hiss Maker** (infinite dust).
+    *   Feed `Other` → **Cloud/Drone Maker** (pure tonal texture without transient artifacts).
+*   **Impact**: This turns "lucky accidents" into reliable, clean sampling.
 
 ---
 
