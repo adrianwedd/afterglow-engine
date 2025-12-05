@@ -19,7 +19,8 @@
 
 # afterglow-engine
 
-*A small offline tool that mines your past work for new textures.*
+*A small offline tool that mines your past audio work for new textures.*
+
 
 ---
 
@@ -78,7 +79,7 @@ a patient studio assistant that wanders through your archives, gently steals bac
 So future paintings are not just new images.  
 They’re painted with **the ground-up archaeology of everything you’ve ever touched.**
 
-`afterglow-engine` is that idea, implemented in code.
+`afterglow-engine` is that idea - sonic archaeology, implemented in code.
 
 It doesn’t make tracks.  
 It doesn’t make creative choices.  
@@ -125,7 +126,7 @@ python make_textures.py --all
 ## Dependencies & Notes
 
 - **librosa** is required for pitch shifting and some analysis paths; if it’s absent, those paths fail gracefully (cloud pitch-shift is skipped), but install the full requirements for intended behavior.
-- Exports are TR-8S-ready WAVs (44.1 kHz, 16/24-bit) with per-category stereo/mono control via `export` config.
+- Exports are WAVs (44.1 kHz, 16/24-bit) organized by source folder.
 
 ## Features
 
@@ -172,7 +173,7 @@ pip install -r requirements.txt
 ├── pad_sources/                  # Hand-picked tonal material (optional)
 ├── drums/                        # Percussive material for hiss (optional)
 └── export/
-    └── tr8s/
+    └── <Source_Name>/
         ├── pads/                 # Loopable pad outputs
         ├── swells/               # Swell one-shots
         ├── clouds/               # Granular textures
@@ -260,17 +261,17 @@ python make_textures.py --all
 ```
 
 The tool will:
-1. Mine sustained segments from `source_audio/` → `export/tr8s/pads/`
-2. Process `pad_sources/` into variants → `export/tr8s/pads/` & `export/tr8s/swells/`
-3. Generate granular clouds → `export/tr8s/clouds/`
-4. Create hiss textures → `export/tr8s/hiss/`
+1. Mine sustained segments from `source_audio/` → `export/<source>/pads/`
+2. Process `pad_sources/` into variants → `export/<source>/pads/` & `export/<source>/swells/`
+3. Generate granular clouds → `export/<source>/clouds/`
+4. Create hiss textures → `export/<source>/hiss/`
 
 ### 3. Import to TR-8S
 
-Copy files from `export/tr8s/` to your TR-8S SD card sample folder:
+Copy folders from `export/` to your TR-8S SD card sample folder:
 
 ```bash
-cp -r export/tr8s/* /Volumes/TR8S/SAMPLES/
+cp -r export/* /Volumes/TR8S/SAMPLES/
 ```
 
 (Adjust path to match your TR-8S mount point)
