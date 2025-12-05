@@ -4,6 +4,26 @@
 
 ---
 
+## v0.6 (The Architect)
+*The machine understands context.*
+
+Instead of treating audio as raw signal, the engine now listens for key and tempo. It aligns the excavation to the musical grid.
+
+**Technical Details:**
+*   **The Ear (Analysis):**
+    *   Added `musiclib/music_theory.py` for chroma-based Key detection and beat-tracking BPM detection.
+    *   Pre-flight analysis runs on every source file before processing; results (Key, BPM) are passed to all modules.
+*   **The Transposer:**
+    *   New `target_key` config option allows auto-transposing entire archives to a single root (e.g., "C maj").
+    *   Implemented relative pitch-shifting in Drones and resampling-based shifting in Clouds to maintain fidelity.
+*   **The Seamstress (Looping):**
+    *   New `find_best_loop_trim` function uses cross-correlation to find the optimal phase-aligned cut point.
+    *   Pads and Drones now loop seamlessly with significantly reduced artifacts.
+*   **Manifest:**
+    *   `manifest.csv` now includes `Detected Key`, `Detected BPM`, and `Transposition` columns.
+
+---
+
 ## v0.5 (The Curator)
 *The machine learns to judge.*
 
@@ -17,20 +37,6 @@ The engine now audits its own work. It no longer blindly saves everything; it me
 *   **Manifest Generation:** All runs now produce a `manifest.csv` in the export folder, logging stats and grades for every file created.
 *   **Cloud Fallback:** Refined soft fallback logic for granular synthesis now logs when it happens and chooses the least-chaotic windows.
 *   **Loop Optimization:** Added `find_best_loop_trim` (cross-correlation) to automatically align loop points for minimal phase error.
-
----
-
-## v0.5 (The Curator)
-*Metadata, grading, and a manifest.*
-
-Clouds and pads now report what they are, not just how they sound.
-
-**Highlights:**
-*   **Manifest:** `export/manifest.csv` records filename, source, type, duration, RMS/peak/crest, centroid, rough pitch (tonal), loop seam error, brightness, and grade.
-*   **Grading & Curation:** Configurable thresholds; optional auto-delete of Grade F (silence/clipping/harsh crest). Applies to pads, drones/swells, clouds, hiss.
-*   **Safer Loops:** Phase-aware loop trimming with mono guard and trim caps; hiss crossfades skip optimization to preserve timing.
-*   **Defaults:** Relaxed stability thresholds out-of-box; config validation tightened (analysis window/hop, overlap ratio).
-*   **Docs:** README usage expanded; curation config documented.
 
 ---
 
