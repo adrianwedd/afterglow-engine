@@ -61,4 +61,5 @@ archive/scripts/
 # --- Legacy / Misc ---
 *.orig
 *.bak
-.git-helparchive/
+.git-help
+archive/
