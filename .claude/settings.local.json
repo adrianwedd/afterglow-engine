@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python make_solanus_textures.py:*)",
+      "Bash(pip install:*)",
+      "Bash(soxi:*)",
+      "Bash(sfinfo:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(for f in swells/solanus_swell_*.wav)",
+      "Bash(do soxi -D $f)",
+      "Bash(done)",
+      "Bash(for f in clouds/solanus_cloud_*.wav)",
+      "Bash(while read f)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

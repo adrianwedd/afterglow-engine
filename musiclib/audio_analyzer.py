@@ -34,6 +34,8 @@ class AudioAnalyzer:
         """
         self.audio = audio
         self.sr = sr
+        self.window_size_sec = window_size_sec
+        self.hop_sec = hop_sec
         self.window_size_samples = int(window_size_sec * sr)
         self.hop_samples = int(hop_sec * sr)
 

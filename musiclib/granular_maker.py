@@ -176,6 +176,8 @@ def extract_grains(
             max_dc_offset=max_dc_offset,
             max_crest=max_crest_factor,
         )
+        num_stable = np.sum(stable_mask) if stable_mask is not None else 0
+        print(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}], DC={max_dc_offset}, crest={max_crest_factor})")
 
     # Extract grains with optional quality filtering
     attempts = 0
