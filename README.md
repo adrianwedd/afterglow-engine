@@ -308,4 +308,4 @@ All outputs:
 
 ## License
 
-Use this tool freely for your own sound design workflows.
+Use this tool freely for your own sound design workflows. See [LICENSE](LICENSE).
