@@ -318,6 +318,7 @@ def mine_all_pads(config: dict) -> dict:
 def save_mined_pads(
     pad_dict: dict,
     config: dict,
+    manifest: list = None,
 ) -> int:
     """
     Save mined pads to export directory.
@@ -346,8 +347,30 @@ def save_mined_pads(
             else:
                 filename = f"{source_name}_pad{i:02d}.wav"
             filepath = f"{target_dir}/{filename}"
+            metadata = dsp_utils.compute_audio_metadata(
+                pad_audio,
+                sr,
+                brightness_bounds=(1200, 4000),
+                kind="pad",
+                source=source_name,
+                filename=filename,
+            )
+            thresholds = config.get("curation", {}).get("thresholds", {})
+            grade = dsp_utils.grade_audio(metadata, thresholds)
+            metadata["grade"] = grade
+            metadata["saved"] = True
+            auto_delete = config.get("curation", {}).get("auto_delete_grade_f", False)
+            if auto_delete and grade == "F":
+                metadata["saved"] = False
+                if manifest is not None:
+                    manifest.append(metadata)
+                print(f"    ✕ {filename} (grade F, skipped)")
+                continue
+
             if io_utils.save_audio(filepath, pad_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
+                if manifest is not None:
+                    manifest.append(metadata)
                 print(f"    ✓ {filename}")
 
     return total_saved

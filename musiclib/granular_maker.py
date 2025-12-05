@@ -627,6 +627,7 @@ def process_cloud_sources(config: dict) -> dict:
 def save_clouds(
     clouds_dict: dict,
     config: dict,
+    manifest: list = None,
 ) -> int:
     """
     Save granular clouds to export directory.
@@ -656,8 +657,39 @@ def save_clouds(
             else:
                 filename_with_tag = filename
             filepath = f"{target_dir}/{filename_with_tag}"
+            # Metadata + grading
+            brightness_bounds = None
+            brightness_config = config.get("brightness_tags", {})
+            if brightness_config.get("enabled", True):
+                brightness_bounds = (
+                    brightness_config.get("centroid_low_hz", 1200),
+                    brightness_config.get("centroid_high_hz", 4000),
+                )
+            metadata = dsp_utils.compute_audio_metadata(
+                cloud_audio,
+                sr,
+                brightness_bounds=brightness_bounds,
+                kind="cloud",
+                source=source_name,
+                filename=filename_with_tag,
+            )
+            thresholds = config.get("curation", {}).get("thresholds", {})
+            grade = dsp_utils.grade_audio(metadata, thresholds)
+            metadata["grade"] = grade
+            metadata["saved"] = True
+
+            auto_delete = config.get("curation", {}).get("auto_delete_grade_f", False)
+            if auto_delete and grade == "F":
+                metadata["saved"] = False
+                if manifest is not None:
+                    manifest.append(metadata)
+                print(f"    ✕ {filename_with_tag} (grade F, skipped)")
+                continue
+
             if io_utils.save_audio(filepath, cloud_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
+                if manifest is not None:
+                    manifest.append(metadata)
                 print(f"    ✓ {filename_with_tag}")
 
     return total_saved

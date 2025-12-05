@@ -327,6 +327,7 @@ def process_pad_sources(config: dict) -> dict:
 def save_drone_outputs(
     drone_dict: dict,
     config: dict,
+    manifest: list = None,
 ) -> Tuple[int, int]:
     """
     Save drone maker outputs to export directories.
@@ -356,12 +357,40 @@ def save_drone_outputs(
         for audio, filename in outputs:
             if 'swell' in filename:
                 filepath = f"{swell_export_dir}/{filename}"
-                if io_utils.save_audio(filepath, audio, sr=sr, bit_depth=bit_depth):
-                    swells_saved += 1
+                metadata_type = "swell"
+                brightness_bounds = None
             else:
                 filepath = f"{pad_export_dir}/{filename}"
-                if io_utils.save_audio(filepath, audio, sr=sr, bit_depth=bit_depth):
+                metadata_type = "pad"
+                brightness_bounds = (1200, 4000)
+
+            metadata = dsp_utils.compute_audio_metadata(
+                audio,
+                sr,
+                brightness_bounds=brightness_bounds,
+                kind=metadata_type,
+                source=source_name,
+                filename=filename,
+            )
+            thresholds = config.get("curation", {}).get("thresholds", {})
+            grade = dsp_utils.grade_audio(metadata, thresholds)
+            metadata["grade"] = grade
+            metadata["saved"] = True
+            auto_delete = config.get("curation", {}).get("auto_delete_grade_f", False)
+            if auto_delete and grade == "F":
+                metadata["saved"] = False
+                if manifest is not None:
+                    manifest.append(metadata)
+                print(f"    ✕ {filename} (grade F, skipped)")
+                continue
+
+            if io_utils.save_audio(filepath, audio, sr=sr, bit_depth=bit_depth):
+                if metadata_type == "swell":
+                    swells_saved += 1
+                else:
                     pads_saved += 1
-            print(f"    ✓ {filename}")
+                if manifest is not None:
+                    manifest.append(metadata)
+                print(f"    ✓ {filename}")
 
     return pads_saved, swells_saved

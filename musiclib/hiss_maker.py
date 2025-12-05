@@ -323,6 +323,7 @@ def make_all_hiss(config: dict) -> dict:
 def save_hiss(
     hiss_dict: dict,
     config: dict,
+    manifest: list = None,
 ) -> int:
     """
     Save hiss loops and flickers to export directory.
@@ -346,8 +347,29 @@ def save_hiss(
 
         for hiss_audio, filename in outputs:
             filepath = f"{target_dir}/{filename}"
+            metadata = dsp_utils.compute_audio_metadata(
+                hiss_audio,
+                sr,
+                kind="hiss",
+                source=source_name,
+                filename=filename,
+            )
+            thresholds = config.get("curation", {}).get("thresholds", {})
+            grade = dsp_utils.grade_audio(metadata, thresholds)
+            metadata["grade"] = grade
+            metadata["saved"] = True
+            auto_delete = config.get("curation", {}).get("auto_delete_grade_f", False)
+            if auto_delete and grade == "F":
+                metadata["saved"] = False
+                if manifest is not None:
+                    manifest.append(metadata)
+                print(f"    ✕ {filename} (grade F, skipped)")
+                continue
+
             if io_utils.save_audio(filepath, hiss_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
+                if manifest is not None:
+                    manifest.append(metadata)
                 print(f"    ✓ {filename}")
 
     return total_saved

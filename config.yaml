@@ -118,3 +118,11 @@ brightness_tags:
   enabled: true
   centroid_low_hz: 1200
   centroid_high_hz: 4000
+
+# Curation / manifest
+curation:
+  auto_delete_grade_f: false
+  thresholds:
+    min_rms_db: -60.0
+    clipping_tolerance: 0.01
+    max_crest_factor: 25.0

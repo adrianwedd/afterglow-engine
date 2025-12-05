@@ -13,6 +13,7 @@ Usage:
 import argparse
 import sys
 import os
+import csv
 import yaml
 from pathlib import Path
 
@@ -167,7 +168,7 @@ def run_mine_pads(config: dict) -> None:
     """Execute pad mining."""
     pad_dict = segment_miner.mine_all_pads(config)
     if pad_dict:
-        total = segment_miner.save_mined_pads(pad_dict, config)
+        total = segment_miner.save_mined_pads(pad_dict, config, manifest=config.get("_manifest"))
         print(f"\n[✓] Saved {total} pad(s) to {config['paths']['export_dir']}/")
     else:
         print(f"\n[!] No pads mined (check {config['paths']['source_audio_dir']})")
@@ -177,7 +178,7 @@ def run_make_drones(config: dict) -> None:
     """Execute drone/swell generation."""
     drone_dict = drone_maker.process_pad_sources(config)
     if drone_dict:
-        pads, swells = drone_maker.save_drone_outputs(drone_dict, config)
+        pads, swells = drone_maker.save_drone_outputs(drone_dict, config, manifest=config.get("_manifest"))
         print(f"\n[✓] Saved {pads} pad(s) and {swells} swell(s)")
     else:
         print(f"\n[!] No drone sources processed (check {config['paths']['pad_sources_dir']})")
@@ -187,7 +188,7 @@ def run_make_clouds(config: dict) -> None:
     """Execute granular cloud generation."""
     clouds_dict = granular_maker.process_cloud_sources(config)
     if clouds_dict:
-        total = granular_maker.save_clouds(clouds_dict, config)
+        total = granular_maker.save_clouds(clouds_dict, config, manifest=config.get("_manifest"))
         print(f"\n[✓] Saved {total} cloud(s) to {config['paths']['export_dir']}/")
     else:
         print(f"\n[!] No clouds generated (check {config['paths']['pad_sources_dir']})")
@@ -197,7 +198,7 @@ def run_make_hiss(config: dict) -> None:
     """Execute hiss/flicker generation."""
     hiss_dict = hiss_maker.make_all_hiss(config)
     if hiss_dict:
-        total = hiss_maker.save_hiss(hiss_dict, config)
+        total = hiss_maker.save_hiss(hiss_dict, config, manifest=config.get("_manifest"))
         print(f"\n[✓] Saved {total} hiss audio file(s) to {config['paths']['export_dir']}/")
     else:
         print(f"\n[!] No hiss textures generated")
@@ -262,6 +263,9 @@ Examples:
     # Validate config early to catch obvious errors
     validate_config(config)
 
+    # Manifest accumulator (shared across phases)
+    config["_manifest"] = []
+
     # Set random seed if specified (for reproducible results)
     reproducibility_config = config.get('reproducibility', {})
     random_seed = reproducibility_config.get('random_seed', None)
@@ -288,6 +292,19 @@ Examples:
 
     if args.all or args.make_hiss:
         run_make_hiss(config)
+
+    # Emit manifest if any rows were collected
+    manifest = config.get("_manifest", [])
+    if manifest:
+        export_dir = config['paths']['export_dir']
+        os.makedirs(export_dir, exist_ok=True)
+        manifest_path = os.path.join(export_dir, "manifest.csv")
+        fieldnames = sorted({k for row in manifest for k in row.keys()})
+        with open(manifest_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(manifest)
+        print(f"[manifest] Wrote {len(manifest)} rows to {manifest_path}")
 
     print("\n" + "=" * 60)
     print(" Export directory: " + config['paths']['export_dir'])
