@@ -54,6 +54,9 @@ Thumbs.db
 *.swp
 *.swo
 *~
+.claude/
+.gemini/
+archive/scripts/
 
 # --- Legacy / Misc ---
 *.orig
