@@ -1,0 +1,177 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    AUDIO TOOLCHAIN UPGRADE v0.2                              ║
+║                        CHANGES AT A GLANCE                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+✨ 6 NEW FEATURES
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1️⃣  MULTIPLE PAD TARGET DURATIONS                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Extract pads at different lengths from the same source audio               │
+│                                                                              │
+│ OLD:  target_duration_sec: 2.0                                             │
+│ NEW:  target_durations_sec: [2.0, 3.5, 4.0]                                │
+│                                                                              │
+│ RESULT: More variety from same source, all respecting max_candidates_per_file
+│ FILES:  segment_miner.py                                                    │
+│ STATUS: ✅ Backwards compatible                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2️⃣  PER-CATEGORY STEREO/MONO EXPORT                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Choose stereo or mono independently for each texture type                   │
+│                                                                              │
+│ NEW:  export:                                                               │
+│         pads_stereo: false      # Mono (default)                           │
+│         swells_stereo: true     # Stereo                                   │
+│         clouds_stereo: true     # Stereo                                   │
+│         hiss_stereo: false      # Mono (default)                           │
+│                                                                              │
+│ RESULT: ~2x file size for stereo; more width in final mix                  │
+│ FILES:  segment_miner.py, granular_maker.py, dsp_utils.py                  │
+│ STATUS: ✅ Backwards compatible (defaults to mono)                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3️⃣  CONFIGURABLE GRANULAR PITCH RANGE                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Use asymmetric pitch shifts in granular clouds (e.g., -4 to +8 semitones)  │
+│                                                                              │
+│ OLD:  max_pitch_shift_semitones: 7  # ±7 only                              │
+│ NEW:  pitch_shift_range:                                                    │
+│         min: -8                  # Lower bound                             │
+│         max: 8                   # Upper bound                             │
+│                                                                              │
+│ RESULT: More expressive clouds, wider harmonic range                       │
+│ FILES:  granular_maker.py                                                   │
+│ STATUS: ✅ Backwards compatible (auto-converts old format)                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4️⃣  CONFIGURABLE HISS BAND-PASS FREQUENCIES                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Customize high-frequency range for hiss and flicker textures               │
+│                                                                              │
+│ NEW:  hiss:                                                                 │
+│         bandpass_low_hz: 5000   # Band-pass low cutoff                     │
+│         bandpass_high_hz: 14000 # Band-pass high cutoff                    │
+│         use_bandpass: true      # Band-pass (vs high-pass)                 │
+│                                                                              │
+│ RESULT: Precise control over air/hiss brightness                           │
+│ FILES:  hiss_maker.py                                                       │
+│ STATUS: ✅ Backwards compatible (supports old band_*_hz keys)               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5️⃣  BRIGHTNESS TAGGING (DARK/MID/BRIGHT)                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Auto-classify textures by spectral centroid in filenames                    │
+│                                                                              │
+│ NEW:  brightness_tags:                                                      │
+│         enabled: true           # Enable tagging                           │
+│         centroid_low_hz: 1500   # Dark ↔ mid threshold                     │
+│         centroid_high_hz: 3500  # Mid ↔ bright threshold                   │
+│                                                                              │
+│ RESULT: Filenames show tonal character                                     │
+│   Example: solanus_pad01_dark.wav, cloud_source_02_bright.wav              │
+│                                                                              │
+│ FILES:  dsp_utils.py (classifier), segment_miner.py, granular_maker.py     │
+│ STATUS: ✅ Backwards compatible (enabled by default, can disable)           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6️⃣  EXPOSED LOOP CROSSFADE CONFIGURATION                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Control pad loop smoothness via config                                      │
+│                                                                              │
+│ OLD:  crossfade_ms: 100  (hard-coded in code)                              │
+│ NEW:  pad_miner:                                                            │
+│         loop_crossfade_ms: 100  # Smoothing duration (ms)                  │
+│                                                                              │
+│ RESULT: Tweak loop quality without editing Python code                     │
+│ FILES:  segment_miner.py                                                    │
+│ STATUS: ✅ Backwards compatible (supports old crossfade_ms key)             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+📊 IMPLEMENTATION STATS
+
+  Files Modified:      6
+  ├─ Configuration:    1 (config.yaml)
+  ├─ Documentation:    3 (README.md, UPGRADES.md, IMPLEMENTATION_SUMMARY.md)
+  ├─ Code:             2 (dsp_utils.py, segment_miner.py, granular_maker.py, hiss_maker.py)
+  │
+  Lines Added:         ~500+ (mostly code + documentation)
+  Breaking Changes:    0 (100% backwards compatible)
+  New Functions:       3 (classify_brightness, stereo_to_mono, mono_to_stereo)
+  Modified Functions:  8 (segment_miner, granular_maker, hiss_maker)
+
+
+🔄 BACKWARDS COMPATIBILITY
+
+  ✅ Old configs work unchanged
+  ✅ All new options have sensible defaults
+  ✅ Code gracefully falls back to old config keys
+  ✅ No changes to CLI interface (make_textures.py)
+  ✅ Output format remains 44.1kHz, 16/24-bit WAV
+
+
+📈 PERFORMANCE
+
+  Multiple pad durations:     +Linear (N durations = ~N passes)
+  Stereo export:              +100% disk & memory per file (natural)
+  Brightness tagging:         +1 FFT per file (negligible)
+  Granular pitch range:       No change (same grain count)
+  Hiss band-pass tuning:      No change (same filter ops)
+  Loop crossfade config:      No change (already computed)
+
+
+🎯 KEY FILES
+
+  config.yaml                     Updated with new sections & options
+  README.md                       New "Features v0.2" section
+  UPGRADES.md                     Comprehensive upgrade guide (400+ lines)
+  IMPLEMENTATION_SUMMARY.md       Technical details & testing guide
+  CONFIG_QUICK_REFERENCE.md       Quick lookup for all config options
+  
+  musiclib/dsp_utils.py           +classify_brightness(), +mono/stereo helpers
+  musiclib/segment_miner.py       Multiple durations, brightness tags, stereo
+  musiclib/granular_maker.py      Pitch range, brightness tags, stereo
+  musiclib/hiss_maker.py          Configurable band-pass frequencies
+
+
+✅ TESTING CHECKLIST
+
+  ☑ Backwards compatible with old config.yaml
+  ☑ Multiple pad durations generate expected number of files
+  ☑ Brightness tags appear in filenames (_dark, _mid, _bright)
+  ☑ Stereo export creates 2-channel WAV files
+  ☑ Pitch range in clouds uses both min and max values
+  ☑ Hiss band-pass frequencies customize output tone
+  ☑ Loop crossfade affects pad smoothness
+  ☑ All exports are 44.1kHz, 16/24-bit, normalized to -1dBFS
+
+
+📚 DOCUMENTATION
+
+  README.md                       High-level feature overview
+  CONFIG_QUICK_REFERENCE.md       Fast lookup for config options
+  UPGRADES.md                     Detailed feature documentation + migration guide
+  IMPLEMENTATION_SUMMARY.md       Technical implementation details
+  config.yaml                     Inline comments for every option
+
+
+🚀 READY FOR PRODUCTION
+
+  Status: ✅ All features implemented and tested
+  Stability: ✅ 100% backwards compatible
+  Documentation: ✅ Comprehensive
+  
+  Next Steps: Run `python make_textures.py --all` to generate with new defaults
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            v0.2 Upgrade Complete!
+═══════════════════════════════════════════════════════════════════════════════

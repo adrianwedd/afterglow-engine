@@ -237,7 +237,7 @@ class AudioAnalyzer:
         duration_sec: float,
         min_stable_windows: int = 2,
         stable_mask: np.ndarray = None,
-    ) -> Tuple[int, int]:
+    ) -> Tuple[int, int] or None:
         """
         Pick a random segment from stable regions.
 
@@ -247,13 +247,14 @@ class AudioAnalyzer:
             stable_mask: Pre-computed stability mask (if None, computes it)
 
         Returns:
-            (start_sample, end_sample) tuple, or (0, 0) if no valid region found
+            (start_sample, end_sample) tuple, or None if no valid region found
+            Note: start=0 is a valid return value and not treated as failure
         """
         if stable_mask is None:
             stable_mask = self.get_stable_regions()
 
         if not np.any(stable_mask):
-            return 0, 0
+            return None
 
         duration_samples = int(duration_sec * self.sr)
 
@@ -261,7 +262,7 @@ class AudioAnalyzer:
         stable_indices = np.where(stable_mask)[0]
 
         if len(stable_indices) < min_stable_windows:
-            return 0, 0
+            return None
 
         # Pick a random stable window
         chosen_idx = np.random.choice(stable_indices)
@@ -287,9 +288,16 @@ class AudioAnalyzer:
         """
         segment = self.audio[start_sample:end_sample]
 
+        # Compute spectral centroid, with guard for very short segments
+        if len(segment) >= 512:
+            centroid_hz = np.mean(librosa.feature.spectral_centroid(y=segment, sr=self.sr))
+        else:
+            # For very short segments, reuse precomputed centroid or use default
+            centroid_hz = 2000.0  # Neutral midrange default
+
         return {
             'rms_db': dsp_utils.rms_energy_db(segment),
             'dc_offset': np.abs(np.mean(segment)),
             'crest_factor': np.max(np.abs(segment)) / (dsp_utils.rms_energy(segment) + 1e-6),
-            'centroid_hz': np.mean(librosa.feature.spectral_centroid(y=segment, sr=self.sr)),
+            'centroid_hz': centroid_hz,
         }

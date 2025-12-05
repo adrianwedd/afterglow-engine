@@ -174,10 +174,12 @@ def extract_grains(
         # If we have stability mask, bias towards stable regions
         if use_quality_filter and stable_mask is not None and np.any(stable_mask):
             # Sample from stable regions
-            start, _ = analyzer.sample_from_stable_region(
+            result = analyzer.sample_from_stable_region(
                 grain_length / sr, stable_mask=stable_mask
             )
-            if start == 0:
+            if result is not None:
+                start, _ = result
+            else:
                 # Fallback to random if stable sampling fails
                 start = np.random.randint(0, max(1, max_start - grain_length + 1))
         else:
@@ -207,20 +209,28 @@ def apply_pitch_shift_grain(
     sr: int,
     min_shift_semitones: float,
     max_shift_semitones: float,
+    min_grain_length_samples: int = 256,
 ) -> np.ndarray:
     """
     Apply random pitch shift to a grain within a range.
+
+    Skips pitch-shifting for very short grains to avoid STFT artifacts.
 
     Args:
         grain: Input grain
         sr: Sample rate
         min_shift_semitones: Minimum pitch shift (negative = lower)
         max_shift_semitones: Maximum pitch shift (positive = higher)
+        min_grain_length_samples: Skip pitch-shift if grain shorter than this (default: 256)
 
     Returns:
-        Pitch-shifted grain
+        Pitch-shifted grain (or original if too short or no shift requested)
     """
     if min_shift_semitones == 0 and max_shift_semitones == 0:
+        return grain
+
+    # Skip pitch-shift for very short grains to avoid STFT artifacts
+    if len(grain) < min_grain_length_samples:
         return grain
 
     shift = np.random.uniform(min_shift_semitones, max_shift_semitones)
@@ -228,10 +238,14 @@ def apply_pitch_shift_grain(
         return grain
 
     # Adaptive n_fft: use grain length if shorter than 2048 to avoid librosa warnings
+    # Also set hop_length explicitly to avoid odd artifacts
     n_fft = min(2048, max(512, len(grain)))
+    hop_length = max(64, n_fft // 4)
 
     try:
-        return librosa.effects.pitch_shift(grain, sr=sr, n_steps=shift, n_fft=n_fft)
+        return librosa.effects.pitch_shift(
+            grain, sr=sr, n_steps=shift, n_fft=n_fft, hop_length=hop_length
+        )
     except Exception:
         # Fallback if pitch shift fails (e.g., too short grain)
         return grain
@@ -247,12 +261,13 @@ def create_cloud(
     pitch_shift_min: float,
     pitch_shift_max: float,
     overlap_ratio: float,
+    config: dict = None,
 ) -> np.ndarray:
     """
     Generate a granular cloud texture from audio.
 
     Enhancements:
-    - Pre-analyzes audio to identify stable, high-quality regions
+    - Pre-analyzes audio to identify stable, high-quality regions (if enabled)
     - Uses improved extraction (quality filtering, per-grain length)
     - Biases grain selection towards stable regions with low onset density
     - Grain placement cycles to fill buffer completely (no silence tail)
@@ -267,14 +282,32 @@ def create_cloud(
         pitch_shift_min: Minimum pitch shift in semitones (negative = lower)
         pitch_shift_max: Maximum pitch shift in semitones (positive = higher)
         overlap_ratio: Grain overlap ratio (0.5-1.0)
+        config: Configuration dictionary (optional; uses defaults if not provided)
 
     Returns:
         Generated cloud audio array
     """
-    # Pre-analyze audio to identify stable regions
-    analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=1.0, hop_sec=0.5)
+    # Extract pre-analysis config (with sensible defaults)
+    if config is None:
+        config = {}
 
-    # Extract grains with quality filtering and pre-analysis
+    pre_analysis_config = config.get('pre_analysis', {})
+    use_pre_analysis = pre_analysis_config.get('enabled', True)
+    analysis_window_sec = pre_analysis_config.get('analysis_window_sec', 1.0)
+    analysis_hop_sec = pre_analysis_config.get('analysis_hop_sec', 0.5)
+    quality_threshold = pre_analysis_config.get('grain_quality_threshold', 0.4)
+    max_dc_offset = pre_analysis_config.get('max_dc_offset', 0.1)
+    max_crest = pre_analysis_config.get('max_crest_factor', 10.0)
+    max_onset_rate = pre_analysis_config.get('max_onset_rate_hz', 3.0)
+    min_rms_db = pre_analysis_config.get('min_rms_db', -40.0)
+    max_rms_db = pre_analysis_config.get('max_rms_db', -10.0)
+
+    # Create analyzer only if enabled
+    analyzer = None
+    if use_pre_analysis:
+        analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
+
+    # Extract grains with quality filtering and optional pre-analysis
     grains = extract_grains(
         audio,
         grain_length_min_ms,
@@ -282,7 +315,7 @@ def create_cloud(
         num_grains,
         sr,
         use_quality_filter=True,
-        min_quality=0.4,
+        min_quality=quality_threshold,
         analyzer=analyzer,
     )
 
@@ -425,6 +458,7 @@ def make_clouds_from_source(
             pitch_shift_min=pitch_min,
             pitch_shift_max=pitch_max,
             overlap_ratio=cloud_config['overlap_ratio'],
+            config=config,
         )
 
         # Apply filtering
