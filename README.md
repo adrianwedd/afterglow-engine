@@ -24,66 +24,79 @@
 
 ---
 
-## What this is
+# What this is(n't) — a metaphor
 
-Imagine this:
+*Imagine this:*
 
-In a back room of your studio, you’ve secretly built a machine.
+*In a back room of your studio, you’ve secretly built a machine.*
 
-It doesn’t paint.  
-It doesn’t choose subjects.  
-It never tells you what to do with the canvas.
+*It doesn’t paint.*  
+*It doesn’t choose subjects.*  
+*It never tells you what to do with the canvas.*
 
-All it does is this:
+*All it does is this:*
 
-You slide in your old work—finished canvases, abandoned panels, primed boards with ghosts of sketches under the gesso, photos of murals that no longer exist, even quick studies on cheap paper you once did just to get your hand moving.
+*You slide in your old work—finished canvases, abandoned panels, primed boards with ghosts of sketches under the gesso, photos of murals that no longer exist, even quick studies on cheap paper you once did just to get your hand moving.*
 
-Inside, the machine:
+*Inside, the machine:*
 
-* very carefully **unweaves** each piece,
-* separates pigment from gesture,
-* peels off glazes from underpainting,
-* collects tiny flakes of colour from places no one ever really looked at.
+* *very carefully **unweaves** each piece,*
+* *separates pigment from gesture,*
+* *peels off glazes from underpainting,*
+* *collects tiny flakes of colour from places no one ever really looked at.*
 
-It doesn’t keep compositions.  
-It doesn’t remember figures or horizons.
+*It doesn’t keep compositions.*  
+*It doesn’t remember figures or horizons.*
 
-It just saves **texture and colour**:
+*It just saves **texture and colour**:*
 
-* a particular bruised green that only ever happened once when two paints misbehaved together,
-* the way a translucent violet settled into the tooth of the canvas,
-* that dry, scratchy ochre from a brush you forgot to clean,
-* the chalky margin where gesso met raw linen.
+* *a particular bruised green that only ever happened once when two paints misbehaved together,*
+* *the way a translucent violet settled into the tooth of the canvas,*
+* *that dry, scratchy ochre from a brush you forgot to clean,*
+* *the chalky margin where gesso met raw linen.*
 
-Then it grinds those fragments down and re-bottles them into small, unlabelled jars:
+*Then it grinds those fragments down and re-bottles them into small, unlabelled jars:*
 
-* “evening wall light,”
-* “wet concrete after a storm,”
-* “skin in winter,”
-* “dust on a forgotten windowsill.”
+* *“evening wall light,”*
+* *“wet concrete after a storm,”*
+* *“skin in winter,”*
+* *“dust on a forgotten windowsill.”*
 
-On your main table, nothing has changed:  
-It’s still you, blank surface, brushes, knives, rags.
+*On your main table, nothing has changed:*  
+*It’s still you, blank surface, brushes, knives, rags.*
 
-The only difference is your palette.
+*The only difference is your palette.*
 
-Now, when you reach for colour, you’re not just squeezing paint from factory tubes—you’re dipping into **distilled memories of your own work**:
+*Now, when you reach for colour, you’re not just squeezing paint from factory tubes—you’re dipping into **distilled memories of your own work**:*
 
-* the atmosphere from a painting you sold years ago,
-* the softness from a figure you painted over,
-* the strange, accidental pink from a ruined canvas that still haunts you.
+* *the atmosphere from a painting you sold years ago,*
+* *the softness from a figure you painted over,*
+* *the strange, accidental pink from a ruined canvas that still haunts you.*
 
-What we’ve built is that quiet machine:  
-a patient studio assistant that wanders through your archives, gently steals back the colours and surfaces you’ve already invented, and lays them out again as fresh pigment.
+*What we’ve built is that quiet machine:*  
+*a patient studio assistant that wanders through your archives, gently steals back the colours and surfaces you’ve already invented, and lays them out again as fresh pigment.*
 
-So future paintings are not just new images.  
-They’re painted with **the ground-up archaeology of everything you’ve ever touched.**
+*So future paintings are not just new images.*  
+*They’re painted with **the ground-up archaeology of everything you’ve ever touched.***
 
-`afterglow-engine` is that idea - sonic archaeology, implemented in code.
+---
+
+# The Machine
+
+`afterglow-engine` is that idea—**sonic archaeology**—implemented in code.
 
 It doesn’t make tracks.  
 It doesn’t make creative choices.  
-It just walks your archive and turns the **afterglow** of your work into new material.
+It doesn’t invent new sounds.
+
+It simply walks the corridors of your archive, listening for the **afterglow** of your past work. It searches for the moments where the music stopped moving and started breathing—the stable pads, the textural grain, the dust in the air.
+
+It isolates these moments, stabilizes them, and re-bottles them as **distilled artifacts**:
+*   **Pads** looped not by bars, but by phase.
+*   **Clouds** formed from the grain of tonal memory.
+*   **Dust** swept from the transients of forgotten drums.
+
+It hands them back to you not as "content," but as **pigment**.
 
 ---
 
