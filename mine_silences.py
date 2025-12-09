@@ -71,7 +71,8 @@ def mine_silences(
         # High crest factor = transient. Low crest factor = noise/hum.
         peak = np.max(np.abs(chunk))
         rms_val = dsp_utils.db_to_linear(chunk_rms_db)
-        crest = peak / rms_val if rms_val > 0 else 0
+        # Use conservative threshold to avoid division by zero
+        crest = peak / rms_val if rms_val > 1e-10 else 0.0
         
         if crest > 5.0: # Arbitrary threshold: strictly flat(ish) textures
             continue

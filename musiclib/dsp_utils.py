@@ -550,7 +550,7 @@ def classify_brightness(audio: np.ndarray, sr: int, centroid_low_hz: float = 150
         return "mid"
 
 
-def ensure_mono(audio: np.ndarray) -> np.ndarray:
+def ensure_mono(audio: np.ndarray, method: str = "average") -> np.ndarray:
     """
     Normalize audio to mono (samples,) regardless of input convention.
 
@@ -561,20 +561,43 @@ def ensure_mono(audio: np.ndarray) -> np.ndarray:
                - (samples,) -> mono, returned as-is
                - (2, samples) -> stereo (librosa), converted to mono
                - (samples, 2) -> stereo (soundfile), converted to mono
+        method: Conversion method for stereo to mono:
+                - "average": Mean of channels (default, safest for normalization)
+                - "sum": Sum channels then divide by √2 (approx constant power)
+                - "left": Use left channel only
+                - "right": Use right channel only
 
     Returns:
         Mono audio (samples,)
 
     Raises:
-        ValueError: If audio has unexpected shape
+        ValueError: If audio has unexpected shape or invalid method
     """
     if audio.ndim == 1:
         return audio
     elif audio.ndim == 2:
         if audio.shape[0] == 2:  # librosa convention: (2, samples)
-            return np.mean(audio, axis=0)
+            if method == "average":
+                return np.mean(audio, axis=0)
+            elif method == "sum":
+                return np.sum(audio, axis=0) / np.sqrt(2.0)  # Normalize power
+            elif method == "left":
+                return audio[0]
+            elif method == "right":
+                return audio[1]
+            else:
+                raise ValueError(f"Unknown stereo conversion method: {method}")
         elif audio.shape[1] == 2:  # soundfile convention: (samples, 2)
-            return np.mean(audio, axis=1)
+            if method == "average":
+                return np.mean(audio, axis=1)
+            elif method == "sum":
+                return np.sum(audio, axis=1) / np.sqrt(2.0)  # Normalize power
+            elif method == "left":
+                return audio[:, 0]
+            elif method == "right":
+                return audio[:, 1]
+            else:
+                raise ValueError(f"Unknown stereo conversion method: {method}")
         else:
             raise ValueError(
                 f"Unexpected stereo shape: {audio.shape}. "

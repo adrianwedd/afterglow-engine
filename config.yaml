@@ -89,6 +89,7 @@ clouds:
   overlap_ratio: 0.7                            # Slightly more overlap for legato
   lowpass_hz: 7000                              # Softer high-end (was 10000)
   clouds_per_source: 4                          # More clouds (was 2)
+  target_peak_dbfs: -3.0                        # Gentler normalization to prevent saturation on dense grain overlaps
 
 # ENHANCED HISS: More options
 hiss:
@@ -133,3 +134,7 @@ musicality:
   snap_to_grid: false
   bar_lengths: [1, 2, 4]
   target_key: null          # e.g., "C maj" or "A min"; null to keep detected
+
+# Reproducibility (for deterministic grain placement during tuning)
+reproducibility:
+  random_seed: null         # Set to integer for deterministic grain selection (null = non-deterministic)

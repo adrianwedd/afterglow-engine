@@ -286,6 +286,7 @@ def apply_pitch_shift_grain(
     min_grain_length_samples: int = 256,
     max_rate: float = 2.0,
     transposition_semitones: float = 0.0,
+    rng=None,
 ) -> np.ndarray:
     """
     Apply random pitch shift to a grain using resampling (tape speed effect).
@@ -310,7 +311,10 @@ def apply_pitch_shift_grain(
     if len(grain) < min_grain_length_samples:
         return grain
 
-    random_shift = np.random.uniform(min_shift_semitones, max_shift_semitones)
+    if rng is None:
+        rng = np.random
+
+    random_shift = rng.uniform(min_shift_semitones, max_shift_semitones)
     total_shift = random_shift + transposition_semitones
     
     if total_shift == 0:
@@ -328,9 +332,23 @@ def apply_pitch_shift_grain(
     rate = max(1.0 / max_rate, min(max_rate, rate))
 
     try:
+        # Anti-aliasing: apply lowpass before upward shifts to prevent aliasing
+        # (only needed when pitch-shifting up, where high frequencies fold over Nyquist)
+        processed_grain = grain
+        if rate > 1.0:
+            # Calculate safe cutoff frequency (Nyquist after resampling)
+            # Target sample rate will be sr/rate, so new Nyquist is (sr/rate)/2
+            nyquist_after_shift = (sr / rate) / 2.0
+            # Use a conservative cutoff at 80% of new Nyquist to leave transition band
+            cutoff = nyquist_after_shift * 0.8
+            # Only filter if cutoff is below current Nyquist (sr/2)
+            if cutoff < sr / 2:
+                b, a = dsp_utils.design_butterworth_lowpass(cutoff, sr, order=4)
+                processed_grain = dsp_utils.apply_filter(processed_grain, b, a)
+
         # Resample using clamped rate
         # Use kaiser_fast for better performance (default kaiser_best is too slow for grains)
-        resampled = librosa.resample(grain, orig_sr=sr, target_sr=sr / rate, res_type='kaiser_fast')
+        resampled = librosa.resample(processed_grain, orig_sr=sr, target_sr=sr / rate, res_type='kaiser_fast')
         return resampled
     except Exception:
         return grain
@@ -535,7 +553,8 @@ def make_clouds_from_source(
         List of (cloud_audio, brightness_tag, filename) tuples
     """
     cloud_config = config['clouds']
-    peak_dbfs = config['global']['target_peak_dbfs']
+    # Use cloud-specific normalization target if provided (prevents saturation on dense overlaps)
+    peak_dbfs = cloud_config.get('target_peak_dbfs', config['global']['target_peak_dbfs'])
     musicality = config.get("musicality", {})
 
     # Brightness tagging
@@ -644,7 +663,16 @@ def process_cloud_sources(config: dict) -> dict:
     sr = config['global']['sample_rate']
     pad_sources_dir = config['paths']['pad_sources_dir']
     files = io_utils.discover_audio_files(pad_sources_dir)
-    
+
+    # Set random seed for reproducibility if configured; restore afterwards to avoid affecting other modules
+    reproducibility_config = config.get('reproducibility', {})
+    random_seed = reproducibility_config.get('random_seed')
+    prev_state = None
+    if random_seed is not None:
+        prev_state = np.random.get_state()
+        np.random.seed(random_seed)
+        print(f"[clouds] Random seed set to {random_seed} for reproducible grain placement")
+
     musicality = config.get("musicality", {})
     target_key = musicality.get("target_key")
 
@@ -655,40 +683,44 @@ def process_cloud_sources(config: dict) -> dict:
     print(f"\n[GRANULAR MAKER] Processing {len(files)} source file(s)...")
 
     results = {}
-    for filepath in files:
-        stem = io_utils.get_filename_stem(filepath)
-        print(f"  Processing: {stem}")
+    try:
+        for filepath in files:
+            stem = io_utils.get_filename_stem(filepath)
+            print(f"  Processing: {stem}")
 
-        audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
-        if audio is None:
-            continue
+            audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
+            if audio is None:
+                continue
+                
+            # Musical Analysis
+            detected_key = music_theory.detect_key(audio, sr)
+            bpm, conf = music_theory.detect_bpm(audio, sr)
             
-        # Musical Analysis
-        detected_key = music_theory.detect_key(audio, sr)
-        bpm, conf = music_theory.detect_bpm(audio, sr)
-        
-        transposition = 0
-        if target_key and detected_key:
-            transposition = music_theory.get_transposition_interval(detected_key, target_key)
-            print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
-        elif detected_key:
-            print(f"    > Detected Key: {detected_key}")
-            
-        if conf > 0.4:
-            print(f"    > Detected BPM: {bpm:.1f}")
+            transposition = 0
+            if target_key and detected_key:
+                transposition = music_theory.get_transposition_interval(detected_key, target_key)
+                print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
+            elif detected_key:
+                print(f"    > Detected Key: {detected_key}")
+                
+            if conf > 0.4:
+                print(f"    > Detected BPM: {bpm:.1f}")
 
-        clouds = make_clouds_from_source(audio, sr, stem, config, transposition_semitones=transposition, detected_bpm=bpm if conf > 0.4 else None)
-        
-        musical_context = {
-            "key": detected_key,
-            "bpm": bpm if conf > 0.4 else None
-        }
-        
-        results[stem] = {
-            "outputs": clouds,
-            "context": musical_context
-        }
-        print(f"    → Generated {len(clouds)} cloud(s)")
+            clouds = make_clouds_from_source(audio, sr, stem, config, transposition_semitones=transposition, detected_bpm=bpm if conf > 0.4 else None)
+            
+            musical_context = {
+                "key": detected_key,
+                "bpm": bpm if conf > 0.4 else None
+            }
+            
+            results[stem] = {
+                "outputs": clouds,
+                "context": musical_context
+            }
+            print(f"    → Generated {len(clouds)} cloud(s)")
+    finally:
+        if prev_state is not None:
+            np.random.set_state(prev_state)
 
     return results
 

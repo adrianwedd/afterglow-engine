@@ -109,6 +109,13 @@ def save_audio(
 
         # Write to the resolved path (not original string) for consistency with security checks
         sf.write(str(abs_path), audio, sr, subtype=subtype)
+
+        # Verify what was actually written (H6: bit depth validation)
+        info = sf.info(str(abs_path))
+        actual_subtype = info.subtype
+        if actual_subtype != subtype:
+            print(f"  [!] Warning: Requested {subtype}, but file has {actual_subtype}: {str(abs_path)}", file=sys.stderr)
+
         return True
     except Exception as e:
         print(f"  [!] Failed to save {str(abs_path)}: {e}")

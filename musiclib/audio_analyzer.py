@@ -150,7 +150,8 @@ class AudioAnalyzer:
             segment = self.audio[start:end]
             peak = np.max(np.abs(segment))
             rms = dsp_utils.rms_energy(segment)
-            if rms > 1e-6:
+            # Use conservative threshold to avoid division by zero / floating point issues
+            if rms > 1e-10:
                 crest = peak / rms
             else:
                 crest = 0.0
@@ -168,6 +169,7 @@ class AudioAnalyzer:
         max_crest: float = 10.0,
         centroid_low_hz: float = None,
         centroid_high_hz: float = None,
+        verbose: bool = False,
     ) -> np.ndarray:
         """
         Identify stable, high-quality regions in audio.
@@ -187,6 +189,7 @@ class AudioAnalyzer:
             max_crest: Max crest factor
             centroid_low_hz: Min spectral centroid (Hz)
             centroid_high_hz: Max spectral centroid (Hz)
+            verbose: If True, log rejection reasons for debugging
 
         Returns:
             Boolean mask (length = number of windows) indicating stable regions
@@ -217,21 +220,46 @@ class AudioAnalyzer:
         mask = np.ones(len(rms), dtype=bool)
 
         # Filter by RMS
-        mask &= (rms >= rms_low_db) & (rms <= rms_high_db)
+        rms_mask = (rms >= rms_low_db) & (rms <= rms_high_db)
+        if verbose:
+            for i, passes in enumerate(rms_mask):
+                if not passes and mask[i]:
+                    print(f"  [analyzer] Window {i} rejected: RMS {rms[i]:.1f} dB outside [{rms_low_db}, {rms_high_db}]")
+        mask &= rms_mask
 
         # Filter by DC offset
-        mask &= dc < max_dc_offset
+        dc_mask = dc < max_dc_offset
+        if verbose:
+            for i, passes in enumerate(dc_mask):
+                if not passes and mask[i]:
+                    print(f"  [analyzer] Window {i} rejected: DC offset {dc[i]:.4f} >= {max_dc_offset}")
+        mask &= dc_mask
 
         # Filter by crest factor
-        mask &= crest < max_crest
+        crest_mask = crest < max_crest
+        if verbose:
+            for i, passes in enumerate(crest_mask):
+                if not passes and mask[i]:
+                    print(f"  [analyzer] Window {i} rejected: Crest factor {crest[i]:.2f} >= {max_crest}")
+        mask &= crest_mask
 
         # Filter by spectral centroid (optional tonal gate)
         if centroid_low_hz is not None or centroid_high_hz is not None:
             centroid = self._compute_spectral_centroid()
             if centroid_low_hz is not None:
-                mask &= (centroid >= centroid_low_hz)
+                centroid_low_mask = centroid >= centroid_low_hz
+                if verbose:
+                    for i, passes in enumerate(centroid_low_mask):
+                        if not passes and mask[i]:
+                            print(f"  [analyzer] Window {i} rejected: Centroid {centroid[i]:.1f} Hz < {centroid_low_hz}")
+                mask &= centroid_low_mask
             if centroid_high_hz is not None:
-                mask &= (centroid <= centroid_high_hz)
+                centroid_high_mask = centroid <= centroid_high_hz
+                if verbose:
+                    for i, passes in enumerate(centroid_high_mask):
+                        if not passes and mask[i]:
+                            print(f"  [analyzer] Window {i} rejected: Centroid {centroid[i]:.1f} Hz > {centroid_high_hz}")
+                mask &= centroid_high_mask
 
         # Filter by onset density
         for i, start in enumerate(
@@ -241,6 +269,8 @@ class AudioAnalyzer:
             onsets_in_window = np.sum((onset_frames >= start) & (onset_frames < end))
             onset_rate = onsets_in_window / (self.window_size_samples / self.sr)
             if onset_rate > max_onset_rate:
+                if verbose and mask[i]:
+                    print(f"  [analyzer] Window {i} rejected: Onset rate {onset_rate:.2f} > {max_onset_rate}")
                 mask[i] = False
 
         self._stability_mask[cache_key] = mask

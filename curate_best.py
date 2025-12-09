@@ -27,7 +27,8 @@ def score_sample(filepath: str, category: str) -> float:
     rms = np.sqrt(np.mean(y**2))
     rms_db = 20 * np.log10(rms + 1e-9)
     peak = np.max(np.abs(y))
-    crest = peak / rms if rms > 0 else 0
+    # Use conservative threshold to avoid floating point issues
+    crest = peak / rms if rms > 1e-10 else 0.0
     
     score = 0.0
     

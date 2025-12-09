@@ -74,5 +74,6 @@ class TestProcessBatch(unittest.TestCase):
                     del os.environ["AFTERGLOW_EXPORT_ROOT"]
 
 
+
 if __name__ == '__main__':
     unittest.main()
