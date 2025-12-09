@@ -5,6 +5,7 @@ Orchestrates mining, curation, synthesis, formatting, and reporting.
 """
 
 import os
+import sys
 import argparse
 import subprocess
 import shutil
@@ -36,11 +37,11 @@ def main():
             config = yaml.safe_load(f)
     except Exception as e:
         print(f"[!] Failed to load config: {e}")
-        return
+        sys.exit(1)
 
     if not config or 'paths' not in config:
         print("[!] Invalid config: missing 'paths' section")
-        return
+        sys.exit(1)
 
     # Update config for batch
     config['paths']['source_audio_dir'] = args.input_dir
@@ -52,9 +53,11 @@ def main():
         
     print(f"[*] Batch Config saved to {temp_config}")
     
+    batch_success = True
+
     # Step A: Mine Pads
     if not run_step(f"python make_textures.py --config {temp_config} --mine-pads --make-drones", "Mining Pads & Drones"):
-        return
+        batch_success = False
     
     # Step B: Mine Drums & Silences
     print("\n>>> [BATCH] Mining Drums & Silences...")
@@ -67,16 +70,22 @@ def main():
         # Drums
         cmd_drums = f"python mine_drums.py --config {temp_config} --source \"{f}\""
         if not run_step(cmd_drums, f"Drums: {os.path.basename(f)}"):
-            pass # Continue to next file even if one fails
+            batch_success = False
         
         # Silences
         cmd_silence = f"python mine_silences.py --source \"{f}\" --export \"{batch_export_root}\""
         if not run_step(cmd_silence, f"Silences: {os.path.basename(f)}"):
-            pass
+            batch_success = False
         
     print("\n>>> [BATCH] Curation (Skipped - run curate_best.py manually for now)")
-    print(f"\n[✓] Batch processing complete for phase 1. Output in {batch_export_root}")
-    print("    Next steps: Curate, Cloud, Dust, Format.")
+    
+    if batch_success:
+        print(f"\n[✓] Batch processing complete for phase 1. Output in {batch_export_root}")
+        print("    Next steps: Curate, Cloud, Dust, Format.")
+        sys.exit(0)
+    else:
+        print(f"\n[!] Batch processing completed with ERRORS. Check output above.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

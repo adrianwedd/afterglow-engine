@@ -4,6 +4,7 @@ curate_best.py: Select top N samples from each category based on audio features.
 """
 
 import os
+import sys
 import shutil
 import argparse
 import numpy as np
@@ -76,6 +77,12 @@ def main():
     parser.add_argument('--force', action='store_true', help="Overwrite output directory if exists")
     args = parser.parse_args()
     
+    # Validation: Input exists
+    if not os.path.exists(args.input_root):
+        print(f"[!] Input root not found: {args.input_root}")
+        sys.exit(1)
+
+    # Validation: Output safety
     if os.path.exists(args.output_root):
         if args.force:
             print(f"[*] Removing existing output directory: {args.output_root}")
@@ -83,7 +90,7 @@ def main():
         else:
             print(f"[!] Output directory exists: {args.output_root}")
             print("    Use --force to overwrite.")
-            return
+            sys.exit(1)
 
     os.makedirs(args.output_root)
     
@@ -96,18 +103,27 @@ def main():
         "swells": (["swell"], [])
     }
     
+    # Canonicalize output path for safe exclusion checks
+    abs_out = os.path.abspath(args.output_root)
+
+    found_any = False
+    
     for cat, (includes, excludes) in categories.items():
         print(f"Scanning category: {cat}...")
         
         # 1. Gather candidates
         candidates = []
-        if not os.path.exists(args.input_root):
-             print(f"  Input root not found: {args.input_root}")
-             continue
              
         for root, dirs, files in os.walk(args.input_root):
-            # Don't recurse into output dir if it's inside input
-            if os.path.abspath(args.output_root) in os.path.abspath(root): continue
+            # Safe exclusion: check if current root is inside output directory
+            abs_root = os.path.abspath(root)
+            # Use commonpath to check ancestry properly (avoids substring false positives)
+            try:
+                if os.path.commonpath([abs_root, abs_out]) == abs_out:
+                    continue
+            except ValueError:
+                # Different drives (Windows) or disjoint paths
+                pass
             
             for f in files:
                 if not f.endswith(".wav"): continue
@@ -135,6 +151,8 @@ def main():
         print(f"  Found {len(candidates)} candidates.")
         if not candidates: continue
         
+        found_any = True
+
         # 2. Score
         scored = []
         for i, c in enumerate(candidates):
@@ -159,6 +177,11 @@ def main():
                 
             shutil.copy2(path, dest_path)
             print(f"    Picked: {os.path.basename(dest_path)} (Score: {score:.1f})")
+
+    if not found_any:
+        print("[!] No candidates found in any category.")
+        # Is this a failure? Maybe not fatal, but worth noting.
+        # sys.exit(0) is fine.
 
 if __name__ == "__main__":
     main()

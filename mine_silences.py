@@ -11,7 +11,7 @@ import sys
 import argparse
 import numpy as np
 import soundfile as sf
-import librosa # Moved import to top level
+import librosa
 from pathlib import Path
 from musiclib import io_utils, dsp_utils
 
@@ -19,8 +19,7 @@ def mine_silences(
     source_path: str,
     export_dir: str,
     sr: int = 44100,
-    target_peak_db: float = -1.0, # Now unused, kept for API compat
-    normalization_target_db: float = -12.0 # Can be overridden
+    normalization_target_db: float = -12.0
 ):
     print(f"\n[SILENCE MINER] Processing: {source_path}")
     
@@ -84,8 +83,6 @@ def mine_silences(
         # It's a valid soft silence!
         
         # Normalize to target level (makes silence audible as texture)
-        # Use normalization_target_db if provided, else target_peak_db if that makes sense?
-        # The user provided normalization_target_db default of -12.0 which is good.
         chunk_norm = dsp_utils.normalize_audio(chunk, normalization_target_db)
         
         # Apply fades to avoid clicks
