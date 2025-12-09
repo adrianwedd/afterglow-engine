@@ -217,7 +217,7 @@ def grade_audio(metadata: dict, thresholds: dict) -> str:
     return "B"
 
 
-def crossfade(audio1: np.ndarray, audio2: np.ndarray, fade_length: int) -> np.ndarray:
+def crossfade(audio1: np.ndarray, audio2: np.ndarray, fade_length: int, equal_power: bool = True) -> np.ndarray:
     """
     Crossfade between two audio signals.
 
@@ -225,15 +225,24 @@ def crossfade(audio1: np.ndarray, audio2: np.ndarray, fade_length: int) -> np.nd
         audio1: First audio signal
         audio2: Second audio signal
         fade_length: Length of fade in samples
+        equal_power: If True, use equal-power (sqrt) curves to maintain perceived loudness.
+                     If False, use linear fades.
 
     Returns:
         Crossfaded audio
     """
-    fade_out = np.linspace(1, 0, fade_length)
-    fade_in = np.linspace(0, 1, fade_length)
+    t = np.linspace(0, 1, fade_length)
+
+    if equal_power:
+        # Equal-power crossfade maintains constant perceived loudness
+        fade_out = np.sqrt(1 - t)  # Convex curve
+        fade_in = np.sqrt(t)        # Convex curve
+    else:
+        # Linear crossfade
+        fade_out = 1 - t
+        fade_in = t
 
     # Overlap-add the crossfade
-    result = np.concatenate([audio1[:-fade_length], audio2[fade_length:]])
     overlap_region = (audio1[-fade_length:] * fade_out + audio2[:fade_length] * fade_in)
     result = np.concatenate([audio1[:-fade_length], overlap_region, audio2[fade_length:]])
     return result
@@ -464,7 +473,7 @@ def find_best_loop_trim(audio: np.ndarray, fade_length: int, search_window: int 
 
 
 def time_domain_crossfade_loop(
-    audio: np.ndarray, crossfade_ms: float, sr: int, optimize_loop: bool = True
+    audio: np.ndarray, crossfade_ms: float, sr: int, optimize_loop: bool = True, equal_power: bool = True
 ) -> np.ndarray:
     """
     Make audio loopable by crossfading end to beginning.
@@ -474,6 +483,8 @@ def time_domain_crossfade_loop(
         crossfade_ms: Crossfade duration in milliseconds
         sr: Sample rate
         optimize_loop: If True, search for optimal phase alignment before crossfading.
+        equal_power: If True, use equal-power (sqrt) fades for constant perceived loudness.
+                     If False, use linear fades.
 
     Returns:
         Audio with smoothed loop point
@@ -498,8 +509,16 @@ def time_domain_crossfade_loop(
         if trim > 0:
             audio = audio[:-trim]
 
-    fade_out = np.linspace(1, 0, crossfade_samples)
-    fade_in = np.linspace(0, 1, crossfade_samples)
+    t = np.linspace(0, 1, crossfade_samples)
+
+    if equal_power:
+        # Equal-power crossfade maintains constant perceived loudness
+        fade_out = np.sqrt(1 - t)  # Convex curve
+        fade_in = np.sqrt(t)        # Convex curve
+    else:
+        # Linear crossfade
+        fade_out = 1 - t
+        fade_in = t
 
     # Crossfade: end of audio fades out, beginning fades in
     audio_out = audio.copy()
