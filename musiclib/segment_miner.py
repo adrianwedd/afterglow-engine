@@ -91,16 +91,22 @@ def extract_sustained_segments(
     else:
         dsp_utils.vprint(f"    [pre-analysis] No config provided; using standard sustained segment detection")
 
-    # Compute onset strength
-    onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)
-    onset_frames = librosa.onset.onset_detect(
-        onset_envelope=onset_strength, sr=sr, units='samples'
-    )
-    # Precompute spectral flatness across the file to avoid per-window recompute
+    # Compute STFT once and reuse for both onset and spectral features (Phase 3 optimization)
     try:
         S = librosa.stft(y=audio)
+        # Compute onset strength from cached STFT
+        onset_strength = librosa.onset.onset_strength(S=S, sr=sr)
+        onset_frames = librosa.onset.onset_detect(
+            onset_envelope=onset_strength, sr=sr, units='samples'
+        )
+        # Compute spectral flatness from cached STFT
         flatness_frames = librosa.feature.spectral_flatness(S=S)[0]
     except Exception:
+        # Fallback if STFT fails
+        onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)
+        onset_frames = librosa.onset.onset_detect(
+            onset_envelope=onset_strength, sr=sr, units='samples'
+        )
         flatness_frames = None
 
     # Analyze sliding windows

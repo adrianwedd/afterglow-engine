@@ -4,6 +4,53 @@
 
 ---
 
+## v0.8 (Refined Clouds)
+*The machine polishes its textures.*
+
+The clouds emerge cleaner now. Where grains once clashed and folded, they breathe with headroom. The machine remembers its randomness when asked, making comparison possible. Division by silence no longer breaks the spell.
+
+**Technical Details:**
+*   **Cloud Quality:**
+    *   Gentler normalization target (`-3.0 dBFS`) prevents saturation on dense grain overlaps.
+    *   Anti-aliasing filter on upward pitch shifts eliminates foldover artifacts.
+    *   Reproducible grain placement via `random_seed` config for deterministic A/B testing.
+*   **Equal-Power Crossfades:**
+    *   New `equal_power` parameter (default `True`) uses sqrt-based fade curves for constant perceived loudness.
+    *   Applied to both `crossfade()` and `time_domain_crossfade_loop()` functions.
+*   **Phase 3 Optimizations:**
+    *   STFT result caching in `AudioAnalyzer` and `segment_miner` (eliminates redundant computation).
+    *   Golden audio fixtures for regression testing (9 deterministic reference files).
+    *   Property-based testing with Hypothesis (9 tests catching edge cases).
+*   **Robustness:**
+    *   Crest factor guards prevent division by zero on silent audio (3 locations).
+    *   Phase-aware stereo→mono conversion with `method` parameter (`average`, `sum`, `left`, `right`).
+    *   Bit depth verification after save operations.
+    *   Verbose onset detection feedback for debugging grain filtering.
+
+---
+
+## v0.7 (Quiet Fortifications)
+*Stronger walls, same quiet purpose.*
+
+The machine found fragility where silence should have been grace. It found gaps where boundaries should have held firm. Now the tools are steadier, the walls stronger, but the voice unchanged.
+
+**Technical Details:**
+*   **Robustness:**
+    *   Silent audio no longer crashes normalization (11 call sites hardened with proper `ValueError` handling).
+    *   Shape convention handling unified via `ensure_mono()` supporting both `(2, samples)` and `(samples, 2)` formats.
+    *   Atomic manifest writes using tempfile + move to prevent partial CSV corruption.
+*   **Security:**
+    *   Path traversal vulnerability closed via symlink resolution in export boundary checks.
+    *   Canonical path comparison prevents crafted symlink escapes.
+*   **Batch Processing:**
+    *   Automatic cleanup of temporary configs via `atexit` handlers.
+    *   Permissive validation (extremes become warnings, not errors).
+*   **Test Coverage:**
+    *   Added 11 new tests covering silent audio, shape handling, security, batch processing.
+    *   Results: 29/29 passing.
+
+---
+
 ## v0.6 (The Architect)
 *The machine understands context.*
 
