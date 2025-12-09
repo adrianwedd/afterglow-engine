@@ -5,6 +5,7 @@ curate_best.py: Select top N samples from each category based on audio features.
 
 import os
 import shutil
+import argparse
 import numpy as np
 import librosa
 from musiclib import dsp_utils
@@ -15,8 +16,6 @@ def score_sample(filepath: str, category: str) -> float:
     Higher is better.
     """
     try:
-        # Load with default SR to ensure consistency, or native?
-        # Native is faster.
         y, sr = librosa.load(filepath, sr=None)
     except Exception:
         return -999.0
@@ -33,7 +32,6 @@ def score_sample(filepath: str, category: str) -> float:
     
     if category == "drums":
         # Prefer: High crest factor (punchy), Loud-ish
-        # Penalize: Clipping
         if peak >= 0.99: score -= 100
         score += crest * 2.0
         score += rms_db * 0.1
@@ -46,11 +44,6 @@ def score_sample(filepath: str, category: str) -> float:
         duration = len(y) / sr
         score += duration * 2.0
         
-        # Penalize "raw" pads if we have "processed" ones? 
-        # Actually user asked for "gold and gems". 
-        # The processed drones (warm/airy) are often better than raw.
-        # If filename contains "original_loop", it's a drone.
-        
     elif category == "swells":
         # Prefer: Dynamic range, movement
         hop = 512
@@ -59,7 +52,7 @@ def score_sample(filepath: str, category: str) -> float:
             rms_var = np.var(frame_rms)
             score += rms_var * 1000.0
         else:
-            score -= 100 # Too short for a swell
+            score -= 100 
             
     elif category == "silences":
         # Prefer: Consistency, non-zero
@@ -76,44 +69,30 @@ def score_sample(filepath: str, category: str) -> float:
         
     return score
 
-def find_files(roots, patterns):
-    """Find files matching patterns in given roots."""
-    found = []
-    for root_dir in roots:
-        if not os.path.exists(root_dir): continue
-        for root, dirs, files in os.walk(root_dir):
-            if "best_of_collection" in root: continue
-            for f in files:
-                if not f.endswith(".wav"): continue
-                # check patterns
-                match = False
-                for p in patterns:
-                    if p in f.lower() or p in root.lower():
-                        match = True
-                        break
-                if match:
-                    found.append(os.path.join(root, f))
-    return found
-
 def main():
-    # Define search roots
-    search_roots = [
-        "export/tr8s",
-        "archive/temp_work_impossible_extraction/export/tr8s"
-    ]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_root', required=True, help="Root directory to search (e.g. export/tr8s)")
+    parser.add_argument('--output_root', required=True, help="Directory to save best picks")
+    parser.add_argument('--force', action='store_true', help="Overwrite output directory if exists")
+    args = parser.parse_args()
     
-    output_dir = "export/tr8s/08 - The Impossible/best_of_collection"
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-    os.makedirs(output_dir)
+    if os.path.exists(args.output_root):
+        if args.force:
+            print(f"[*] Removing existing output directory: {args.output_root}")
+            shutil.rmtree(args.output_root)
+        else:
+            print(f"[!] Output directory exists: {args.output_root}")
+            print("    Use --force to overwrite.")
+            return
+
+    os.makedirs(args.output_root)
     
     # Define categories and their search patterns
-    # (Category Name, [Keywords])
     categories = {
-        "drums": (["drum"], ["hiss", "loop", "pad", "silence", "swell"]), # (Include, Exclude)
+        "drums": (["drum"], ["hiss", "loop", "pad", "silence", "swell"]), 
         "silences": (["silence"], []),
         "hiss": (["hiss"], []),
-        "pads": (["pad", "loop"], ["swell", "drum", "hiss", "silence"]), # Catch raw pads and drone loops
+        "pads": (["pad", "loop"], ["swell", "drum", "hiss", "silence"]), 
         "swells": (["swell"], [])
     }
     
@@ -122,33 +101,36 @@ def main():
         
         # 1. Gather candidates
         candidates = []
-        for root_dir in search_roots:
-            if not os.path.exists(root_dir): continue
-            for root, dirs, files in os.walk(root_dir):
-                if "best_of_collection" in root: continue
+        if not os.path.exists(args.input_root):
+             print(f"  Input root not found: {args.input_root}")
+             continue
+             
+        for root, dirs, files in os.walk(args.input_root):
+            # Don't recurse into output dir if it's inside input
+            if os.path.abspath(args.output_root) in os.path.abspath(root): continue
+            
+            for f in files:
+                if not f.endswith(".wav"): continue
                 
-                for f in files:
-                    if not f.endswith(".wav"): continue
-                    
-                    f_lower = f.lower()
-                    
-                    # Must match at least one include
-                    has_include = False
-                    for inc in includes:
-                        if inc in f_lower:
-                            has_include = True
-                            break
-                    if not has_include: continue
-                    
-                    # Must NOT match any exclude
-                    has_exclude = False
-                    for exc in excludes:
-                        if exc in f_lower:
-                            has_exclude = True
-                            break
-                    if has_exclude: continue
-                    
-                    candidates.append(os.path.join(root, f))
+                f_lower = f.lower()
+                
+                # Must match at least one include
+                has_include = False
+                for inc in includes:
+                    if inc in f_lower:
+                        has_include = True
+                        break
+                if not has_include: continue
+                
+                # Must NOT match any exclude
+                has_exclude = False
+                for exc in excludes:
+                    if exc in f_lower:
+                        has_exclude = True
+                        break
+                if has_exclude: continue
+                
+                candidates.append(os.path.join(root, f))
         
         print(f"  Found {len(candidates)} candidates.")
         if not candidates: continue
@@ -156,8 +138,6 @@ def main():
         # 2. Score
         scored = []
         for i, c in enumerate(candidates):
-            # Optimization: for large sets (drums), maybe don't score ALL if we just want top 10?
-            # But we need the best. 500 is fast enough.
             if i % 100 == 0 and i > 0: print(f"    Scoring {i}/{len(candidates)}...")
             s = score_sample(c, cat)
             scored.append((s, c))
@@ -167,12 +147,11 @@ def main():
         top_n = scored[:10]
         
         # 4. Copy
-        cat_dir = os.path.join(output_dir, cat)
+        cat_dir = os.path.join(args.output_root, cat)
         os.makedirs(cat_dir, exist_ok=True)
         
         for score, path in top_n:
             fname = os.path.basename(path)
-            # Handle potential name collisions if coming from different source folders
             dest_path = os.path.join(cat_dir, fname)
             if os.path.exists(dest_path):
                 name, ext = os.path.splitext(fname)

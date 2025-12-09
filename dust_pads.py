@@ -11,14 +11,25 @@ from musiclib import io_utils, dsp_utils
 
 def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
     # Load Pad
+    # io_utils uses librosa.load, which returns (channels, samples) for stereo
     pad, _ = io_utils.load_audio(pad_path, sr=sr, mono=False)
     if pad is None: return False
+    
+    # Fix Librosa shape (C, N) -> (N, C) if stereo
+    # We assume N > C usually.
+    if pad.ndim == 2 and pad.shape[0] < pad.shape[1]:
+        pad = pad.T
     
     # Load Hiss
     hiss, _ = io_utils.load_audio(hiss_path, sr=sr, mono=False)
     if hiss is None: return False
     
+    # Fix Librosa shape for hiss too
+    if hiss.ndim == 2 and hiss.shape[0] < hiss.shape[1]:
+        hiss = hiss.T
+    
     # Ensure Pad is stereo (usually nice for dusting)
+    # dsp_utils.mono_to_stereo expects (N,) and returns (N, 2)
     if pad.ndim == 1:
         pad = dsp_utils.mono_to_stereo(pad)
     
@@ -27,11 +38,13 @@ def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
         hiss = dsp_utils.mono_to_stereo(hiss)
         
     # Loop Hiss to match Pad length
+    # Now that we transposed, len() is correct (samples)
     pad_len = len(pad)
     hiss_len = len(hiss)
     
     if hiss_len < pad_len:
         tile_count = int(np.ceil(pad_len / hiss_len))
+        # axis=0 is samples now
         hiss_tiled = np.tile(hiss, (tile_count, 1))
         hiss_aligned = hiss_tiled[:pad_len]
     else:
@@ -47,6 +60,7 @@ def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
     mixed = dsp_utils.normalize_audio(mixed, -1.0)
     
     # Save
+    # sf.write expects (samples, channels), which we now have
     sf.write(output_path, mixed, sr, subtype='PCM_24')
     return True
 
@@ -74,11 +88,7 @@ def main():
     import random
     
     for pad_p in pads:
-        # Pick a random hiss for each pad, or maybe all hisses?
-        # Let's do 1 variant per pad to keep it manageable, or 2?
-        # User asked for "Approach". Let's do 2 variants: 1 random hiss, 1 specific one?
-        # Let's just pick one random hiss per pad for now to avoid explosion.
-        
+        # Pick a random hiss for each pad
         hiss_p = random.choice(hisses)
         
         fname = os.path.basename(pad_p)

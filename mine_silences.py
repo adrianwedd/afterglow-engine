@@ -11,6 +11,7 @@ import sys
 import argparse
 import numpy as np
 import soundfile as sf
+import librosa # Moved import to top level
 from pathlib import Path
 from musiclib import io_utils, dsp_utils
 
@@ -18,13 +19,8 @@ def mine_silences(
     source_path: str,
     export_dir: str,
     sr: int = 44100,
-    target_peak_db: float = -1.0,  # Do we normalize silence? User asked for "soft silences". 
-                                   # If we normalize, they become loud noise. 
-                                   # better to Normalize to a lower target like -12dB or keep original relative level?
-                                   # "extract soft silences" implies the content is soft. 
-                                   # If I boost them to -0.1dB, they are just "Noise".
-                                   # I'll normalize to a modest level so they are audible but not screaming.
-    normalization_target_db: float = -12.0
+    target_peak_db: float = -1.0, # Now unused, kept for API compat
+    normalization_target_db: float = -12.0 # Can be overridden
 ):
     print(f"\n[SILENCE MINER] Processing: {source_path}")
     
@@ -43,33 +39,11 @@ def mine_silences(
     
     # Analysis
     # We'll use a sliding window
-    window_size = int(max_duration_sec * sr)
-    hop_size = int(window_size / 2)
-    
-    candidates = []
-    
-    # We want to avoid capturing tails of loud sounds (reverb tails are okay, but transients are not).
-    # Simple RMS check first.
-    
     # Calculate RMS envelope
     frame_length = 2048
     hop_length = 512
     rms = librosa.feature.rms(y=audio, frame_length=frame_length, hop_length=hop_length)[0]
     rms_db_env = librosa.amplitude_to_db(rms, ref=1.0)
-    times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=hop_length)
-    
-    # Find regions where RMS is within bounds
-    mask = (rms_db_env >= min_rms_db) & (rms_db_env <= max_rms_db)
-    
-    # We need to find continuous runs of 'True' in mask that correspond to our duration
-    # Since we have frame-level mask, let's group them.
-    
-    # However, simple masking might catch zero-crossings of loud signals.
-    # We really want sustained quiet.
-    
-    # Let's revert to a simpler chunking strategy:
-    # 1. Slice audio into potential chunks (randomly or grid).
-    # 2. Check if chunk meets criteria.
     
     # Grid strategy with overlap
     chunk_len_samples = int(0.3 * sr) # ~300ms average
@@ -97,8 +71,8 @@ def mine_silences(
         # 2. Check for transients (we want "silence/texture", not "quiet drum hit")
         # High crest factor = transient. Low crest factor = noise/hum.
         peak = np.max(np.abs(chunk))
-        rms = dsp_utils.db_to_linear(chunk_rms_db)
-        crest = peak / rms if rms > 0 else 0
+        rms_val = dsp_utils.db_to_linear(chunk_rms_db)
+        crest = peak / rms_val if rms_val > 0 else 0
         
         if crest > 5.0: # Arbitrary threshold: strictly flat(ish) textures
             continue
@@ -109,11 +83,9 @@ def mine_silences(
             
         # It's a valid soft silence!
         
-        # Vary the length slightly for natural feel?
-        # User said "shorter", 0.3s is pretty short.
-        
-        # Normalize?
-        # If we normalize "silence" to -12dB, it becomes a usable texture layer.
+        # Normalize to target level (makes silence audible as texture)
+        # Use normalization_target_db if provided, else target_peak_db if that makes sense?
+        # The user provided normalization_target_db default of -12.0 which is good.
         chunk_norm = dsp_utils.normalize_audio(chunk, normalization_target_db)
         
         # Apply fades to avoid clicks
@@ -131,11 +103,10 @@ def mine_silences(
     print(f"    → Extracted {found_count} soft silence/texture samples.")
 
 if __name__ == "__main__":
-    import librosa # Import here to ensure available
-    
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', required=True)
     parser.add_argument('--export', default='export/tr8s')
+    parser.add_argument('--norm_db', type=float, default=-12.0, help="Normalization target in dB")
     args = parser.parse_args()
     
-    mine_silences(args.source, args.export)
+    mine_silences(args.source, args.export, normalization_target_db=args.norm_db)
