@@ -52,6 +52,7 @@ class AudioAnalyzer:
         self._dc_offset = None
         self._crest_factor = None
         self._stability_mask = None
+        self._stft_cache = None  # Shared STFT for onset and spectral analysis
 
     def _compute_rms_curve(self) -> np.ndarray:
         """
@@ -73,6 +74,20 @@ class AudioAnalyzer:
         self._rms_curve = np.array(rms_values) if rms_values else np.array([-80.0])
         return self._rms_curve
 
+    def _get_stft(self) -> np.ndarray:
+        """
+        Compute and cache STFT for reuse across spectral features.
+
+        This eliminates redundant STFT computation when multiple spectral
+        features (onset strength, spectral centroid) are needed.
+
+        Returns:
+            Complex STFT matrix (shape: freq_bins x time_frames)
+        """
+        if self._stft_cache is None:
+            self._stft_cache = librosa.stft(y=self.audio)
+        return self._stft_cache
+
     def _compute_onset_density(self) -> np.ndarray:
         """
         Compute windowed onset density.
@@ -84,7 +99,9 @@ class AudioAnalyzer:
             return self._onset_frames
 
         try:
-            onset_strength = librosa.onset.onset_strength(y=self.audio, sr=self.sr)
+            # Use cached STFT to avoid redundant computation
+            S = self._get_stft()
+            onset_strength = librosa.onset.onset_strength(S=S, sr=self.sr)
             self._onset_strength = onset_strength
             onset_frames = librosa.onset.onset_detect(
                 onset_envelope=onset_strength, sr=self.sr, units='samples'
@@ -106,7 +123,9 @@ class AudioAnalyzer:
             return self._spectral_centroid
 
         try:
-            centroid = librosa.feature.spectral_centroid(y=self.audio, sr=self.sr)[0]
+            # Use cached STFT to avoid redundant computation
+            S = self._get_stft()
+            centroid = librosa.feature.spectral_centroid(S=S, sr=self.sr)[0]
             self._spectral_centroid = centroid
             return centroid
         except Exception:
