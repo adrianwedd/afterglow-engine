@@ -11,11 +11,12 @@ import subprocess
 import shutil
 import yaml
 import glob
+import atexit
 
 def run_step(cmd, desc):
     print(f"\n>>> [BATCH] {desc}...")
     try:
-        subprocess.check_call(cmd, shell=True)
+        subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
         print(f"!!! Error in step '{desc}': {e}")
         return False
@@ -46,17 +47,30 @@ def main():
     # Update config for batch
     config['paths']['source_audio_dir'] = args.input_dir
     config['paths']['export_dir'] = batch_export_root
-    
+
     temp_config = f"config_{args.project_name}.yaml"
+
+    # Register cleanup handler to remove temp config on exit
+    def cleanup_temp_config():
+        if os.path.exists(temp_config):
+            try:
+                os.remove(temp_config)
+                print(f"[*] Cleaned up temporary config: {temp_config}")
+            except Exception as e:
+                print(f"[!] Failed to remove temp config {temp_config}: {e}", file=sys.stderr)
+
+    atexit.register(cleanup_temp_config)
+
+    # Write temp config
     with open(temp_config, 'w') as f:
         yaml.dump(config, f)
-        
+
     print(f"[*] Batch Config saved to {temp_config}")
-    
+
     batch_success = True
 
     # Step A: Mine Pads
-    if not run_step(f"python make_textures.py --config {temp_config} --mine-pads --make-drones", "Mining Pads & Drones"):
+    if not run_step(["python", "make_textures.py", "--config", temp_config, "--mine-pads", "--make-drones"], "Mining Pads & Drones"):
         batch_success = False
     
     # Step B: Mine Drums & Silences
@@ -68,12 +82,12 @@ def main():
     
     for f in files:
         # Drums
-        cmd_drums = f"python mine_drums.py --config {temp_config} --source \"{f}\""
+        cmd_drums = ["python", "mine_drums.py", "--config", temp_config, "--source", f]
         if not run_step(cmd_drums, f"Drums: {os.path.basename(f)}"):
             batch_success = False
         
         # Silences
-        cmd_silence = f"python mine_silences.py --source \"{f}\" --export \"{batch_export_root}\""
+        cmd_silence = ["python", "mine_silences.py", "--source", f, "--export", batch_export_root]
         if not run_step(cmd_silence, f"Silences: {os.path.basename(f)}"):
             batch_success = False
         
