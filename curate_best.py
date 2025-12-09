@@ -19,10 +19,10 @@ def score_sample(filepath: str, category: str) -> float:
     try:
         y, sr = librosa.load(filepath, sr=None)
     except Exception:
-        return -999.0
+        return 0.0 # Return a low but not failing score for unreadable files
         
     if len(y) == 0:
-        return -999.0
+        return 0.0 # Return a low but not failing score for empty files
         
     rms = np.sqrt(np.mean(y**2))
     rms_db = 20 * np.log10(rms + 1e-9)
@@ -70,12 +70,14 @@ def score_sample(filepath: str, category: str) -> float:
         
     return score
 
-def main():
+def main(args=None): # Accept optional args for testability
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_root', required=True, help="Root directory to search (e.g. export/tr8s)")
     parser.add_argument('--output_root', required=True, help="Directory to save best picks")
     parser.add_argument('--force', action='store_true', help="Overwrite output directory if exists")
-    args = parser.parse_args()
+
+    if args is None: # If no args passed, parse from command line
+        args = parser.parse_args()
     
     # Validation: Input exists
     if not os.path.exists(args.input_root):
@@ -115,15 +117,27 @@ def main():
         candidates = []
              
         for root, dirs, files in os.walk(args.input_root):
-            # Safe exclusion: check if current root is inside output directory
             abs_root = os.path.abspath(root)
-            # Use commonpath to check ancestry properly (avoids substring false positives)
-            try:
-                if os.path.commonpath([abs_root, abs_out]) == abs_out:
-                    continue
-            except ValueError:
-                # Different drives (Windows) or disjoint paths
-                pass
+            
+            # Prune `dirs` list to avoid descending into the output directory if it's a subdir
+            new_dirs = []
+            for d in dirs:
+                current_dir_path = os.path.join(abs_root, d)
+                try:
+                    # Check if the current directory 'd' (or any of its parents) is the output_root
+                    # If commonpath is abs_out, then current_dir_path is inside abs_out.
+                    # Or check if abs_out is a prefix of current_dir_path
+                    if current_dir_path.startswith(abs_out + os.sep) or current_dir_path == abs_out:
+                        continue
+                except ValueError:
+                    # Disjoint paths
+                    pass
+                new_dirs.append(d)
+            dirs[:] = new_dirs # Prune in place
+            
+            # Also skip current root if it's the output directory itself
+            if abs_root == abs_out:
+                continue
             
             for f in files:
                 if not f.endswith(".wav"): continue
@@ -180,8 +194,9 @@ def main():
 
     if not found_any:
         print("[!] No candidates found in any category.")
-        # Is this a failure? Maybe not fatal, but worth noting.
-        # sys.exit(0) is fine.
+        sys.exit(1) # Exit with error if nothing was curated
+    else:
+        sys.exit(0) # Success
 
 if __name__ == "__main__":
     main()
