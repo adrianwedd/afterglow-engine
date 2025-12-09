@@ -228,11 +228,12 @@ class TestH7PhaseAwareStereoConversion(unittest.TestCase):
         self.assertTrue(np.allclose(result, [0.5, 0.5]))
 
     def test_method_sum(self):
-        """'sum' method should preserve energy but normalize gain (divide by 2)"""
+        """'sum' method should preserve power (divide by √2)"""
         audio_librosa = np.array([[1.0, 1.0], [0.0, 0.0]])  # (2, samples)
         result = dsp_utils.ensure_mono(audio_librosa, method="sum")
-        # After summing [1.0, 1.0] + [0.0, 0.0] = [1.0, 1.0], then /2 = [0.5, 0.5]
-        self.assertTrue(np.allclose(result, [0.5, 0.5]))
+        # After summing [1.0, 1.0] + [0.0, 0.0] = [1.0, 1.0], then /√2 ≈ [0.707, 0.707]
+        expected = 1.0 / np.sqrt(2.0)
+        self.assertTrue(np.allclose(result, [expected, expected]))
 
     def test_method_left(self):
         """'left' method should take first channel"""
@@ -255,8 +256,9 @@ class TestH7PhaseAwareStereoConversion(unittest.TestCase):
         self.assertTrue(np.allclose(result_avg, [0.5, 1.0, 1.5]))
 
         result_sum = dsp_utils.ensure_mono(audio_sf, method="sum")
-        # Sum then divide by 2: [1.0, 2.0, 3.0] / 2 = [0.5, 1.0, 1.5]
-        self.assertTrue(np.allclose(result_sum, [0.5, 1.0, 1.5]))
+        # Sum then divide by √2: [1.0, 2.0, 3.0] / √2
+        expected = np.array([1.0, 2.0, 3.0]) / np.sqrt(2.0)
+        self.assertTrue(np.allclose(result_sum, expected))
 
         result_left = dsp_utils.ensure_mono(audio_sf, method="left")
         self.assertTrue(np.allclose(result_left, [1.0, 2.0, 3.0]))
