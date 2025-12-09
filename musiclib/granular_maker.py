@@ -329,7 +329,8 @@ def apply_pitch_shift_grain(
 
     try:
         # Resample using clamped rate
-        resampled = librosa.resample(grain, orig_sr=sr, target_sr=sr / rate)
+        # Use kaiser_fast for better performance (default kaiser_best is too slow for grains)
+        resampled = librosa.resample(grain, orig_sr=sr, target_sr=sr / rate, res_type='kaiser_fast')
         return resampled
     except Exception:
         return grain
