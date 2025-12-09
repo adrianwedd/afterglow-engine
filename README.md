@@ -427,4 +427,4 @@ All outputs:
 
 ## License
 
-Use this tool freely for your own sound design workflows. See [LICENSE](LICENSE) for full details. There is no warranty; you are responsible for how you use it and for any third-party audio you process with it.
+Use this tool freely for your own sound design workflows. See [LICENSE](LICENSE) for full details. There is no warranty; you are responsible for how you use it within your own archive and workflow.

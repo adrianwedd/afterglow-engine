@@ -19,10 +19,10 @@ def score_sample(filepath: str, category: str) -> float:
     try:
         y, sr = librosa.load(filepath, sr=None)
     except Exception:
-        return 0.0 # Return a low but not failing score for unreadable files
+        return None  # unreadable
         
     if len(y) == 0:
-        return 0.0 # Return a low but not failing score for empty files
+        return None  # empty
         
     rms = np.sqrt(np.mean(y**2))
     rms_db = 20 * np.log10(rms + 1e-9)
@@ -75,6 +75,7 @@ def main(args=None): # Accept optional args for testability
     parser.add_argument('--input_root', required=True, help="Root directory to search (e.g. export/tr8s)")
     parser.add_argument('--output_root', required=True, help="Directory to save best picks")
     parser.add_argument('--force', action='store_true', help="Overwrite output directory if exists")
+    parser.add_argument('--fail-on-empty', action='store_true', help="Exit non-zero if no files are curated")
 
     if args is None: # If no args passed, parse from command line
         args = parser.parse_args()
@@ -109,6 +110,7 @@ def main(args=None): # Accept optional args for testability
     abs_out = os.path.abspath(args.output_root)
 
     found_any = False
+    curated_count = 0
     
     for cat, (includes, excludes) in categories.items():
         print(f"Scanning category: {cat}...")
@@ -172,6 +174,8 @@ def main(args=None): # Accept optional args for testability
         for i, c in enumerate(candidates):
             if i % 100 == 0 and i > 0: print(f"    Scoring {i}/{len(candidates)}...")
             s = score_sample(c, cat)
+            if s is None:
+                continue  # Skip unreadable/empty files
             scored.append((s, c))
             
         # 3. Sort & Pick
@@ -191,12 +195,13 @@ def main(args=None): # Accept optional args for testability
                 
             shutil.copy2(path, dest_path)
             print(f"    Picked: {os.path.basename(dest_path)} (Score: {score:.1f})")
+            curated_count += 1
 
-    if not found_any:
-        print("[!] No candidates found in any category.")
-        sys.exit(1) # Exit with error if nothing was curated
-    else:
-        sys.exit(0) # Success
+    if curated_count == 0:
+        print("[!] No candidates curated.")
+        if args.fail_on_empty:
+            sys.exit(1)
+    sys.exit(0) # Success (or warning already printed)
 
 if __name__ == "__main__":
     main()

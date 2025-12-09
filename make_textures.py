@@ -15,6 +15,8 @@ import sys
 import os
 import csv
 import yaml
+import tempfile
+import shutil
 from pathlib import Path
 
 # Import musiclib modules
@@ -169,7 +171,7 @@ def run_mine_pads(config: dict) -> None:
     pad_dict = segment_miner.mine_all_pads(config)
     if pad_dict:
         total = segment_miner.save_mined_pads(pad_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {total} pad(s) to {config['paths']['export_dir']}/")
+        print(f"\n[✓] Saved {total} pad(s) to {config['paths']['export_dir']}/ ")
     else:
         print(f"\n[!] No pads mined (check {config['paths']['source_audio_dir']})")
 
@@ -189,7 +191,7 @@ def run_make_clouds(config: dict) -> None:
     clouds_dict = granular_maker.process_cloud_sources(config)
     if clouds_dict:
         total = granular_maker.save_clouds(clouds_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {total} cloud(s) to {config['paths']['export_dir']}/")
+        print(f"\n[✓] Saved {total} cloud(s) to {config['paths']['export_dir']}/ ")
     else:
         print(f"\n[!] No clouds generated (check {config['paths']['pad_sources_dir']})")
 
@@ -199,7 +201,7 @@ def run_make_hiss(config: dict) -> None:
     hiss_dict = hiss_maker.make_all_hiss(config)
     if hiss_dict:
         total = hiss_maker.save_hiss(hiss_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {total} hiss audio file(s) to {config['paths']['export_dir']}/")
+        print(f"\n[✓] Saved {total} hiss audio file(s) to {config['paths']['export_dir']}/ ")
     else:
         print(f"\n[!] No hiss textures generated")
 
@@ -300,10 +302,17 @@ Examples:
         os.makedirs(export_dir, exist_ok=True)
         manifest_path = os.path.join(export_dir, "manifest.csv")
         fieldnames = sorted({k for row in manifest for k in row.keys()})
-        with open(manifest_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+        # Atomic write: write to temp file first, then move
+        # This prevents race conditions and partial writes if interrupted
+        with tempfile.NamedTemporaryFile(mode='w', dir=export_dir, delete=False, newline="") as tmp:
+            writer = csv.DictWriter(tmp, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(manifest)
+            tmp_path = tmp.name
+
+        # Atomic move (POSIX guarantees atomicity on same filesystem)
+        shutil.move(tmp_path, manifest_path)
         print(f"[manifest] Wrote {len(manifest)} rows to {manifest_path}")
 
     print("\n" + "=" * 60)
