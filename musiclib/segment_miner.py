@@ -3,6 +3,7 @@ Pad mining: extract sustained segments from audio files.
 """
 
 from typing import List, Tuple
+from pathlib import Path
 import numpy as np
 import librosa
 from . import io_utils, dsp_utils, audio_analyzer
@@ -262,9 +263,13 @@ def mine_pads_from_file(
             # Apply crossfade to make pads loopable
             pad_audio = dsp_utils.time_domain_crossfade_loop(pad_audio, crossfade_ms, sr)
 
-            # Normalize
+            # Normalize (skip if audio is silent/invalid)
             peak_dbfs = config['global']['target_peak_dbfs']
-            pad_audio = dsp_utils.normalize_audio(pad_audio, peak_dbfs)
+            try:
+                pad_audio = dsp_utils.normalize_audio(pad_audio, peak_dbfs)
+            except ValueError as e:
+                print(f"    → Skipping pad from {Path(filepath).stem}: {e}")
+                continue
 
             # Convert to stereo if requested
             if pads_stereo:

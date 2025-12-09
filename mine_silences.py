@@ -81,18 +81,22 @@ def mine_silences(
             continue
             
         # It's a valid soft silence!
-        
+
         # Normalize to target level (makes silence audible as texture)
-        chunk_norm = dsp_utils.normalize_audio(chunk, normalization_target_db)
-        
+        try:
+            chunk_norm = dsp_utils.normalize_audio(chunk, normalization_target_db)
+        except ValueError as e:
+            print(f"  [!] Skipping silence chunk: {e}")
+            continue
+
         # Apply fades to avoid clicks
         chunk_norm = dsp_utils.apply_fade_in(chunk_norm, 200) # Short micro-fade
         chunk_norm = dsp_utils.apply_fade_out(chunk_norm, 200)
-        
+
         filename = f"{stem}_silence_{found_count+1:03d}.wav"
         out_path = os.path.join(output_dir, filename)
         sf.write(out_path, chunk_norm, sr, subtype='PCM_24')
-        
+
         found_count += 1
         if found_count >= max_extracted:
             break

@@ -55,10 +55,14 @@ def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
     
     # Simple mix
     mixed = pad + (hiss_aligned * hiss_gain)
-    
+
     # Normalize (preserve headroom)
-    mixed = dsp_utils.normalize_audio(mixed, -1.0)
-    
+    try:
+        mixed = dsp_utils.normalize_audio(mixed, -1.0)
+    except ValueError as e:
+        print(f"  [!] Cannot dust {output_path}: {e}")
+        return False
+
     # Save
     # sf.write expects (samples, channels), which we now have
     sf.write(output_path, mixed, sr, subtype='PCM_24')

@@ -172,9 +172,13 @@ def make_pad_loops(
     )
     pad = dsp_utils.time_domain_crossfade_loop(pad, crossfade_ms, sr)
 
-    # Normalize
+    # Normalize (skip if audio is silent/invalid)
     peak_dbfs = config['global']['target_peak_dbfs']
-    pad = dsp_utils.normalize_audio(pad, peak_dbfs)
+    try:
+        pad = dsp_utils.normalize_audio(pad, peak_dbfs)
+    except ValueError as e:
+        print(f"  [!] Skipping pad loop for {stem_name}: {e}")
+        return []
 
     # Create variants
     results = []
@@ -236,8 +240,12 @@ def make_swells(
     swell = dsp_utils.apply_fade_in(swell, fade_in_samples)
     swell = dsp_utils.apply_fade_out(swell, fade_out_samples)
 
-    # Normalize
-    swell = dsp_utils.normalize_audio(swell, peak_dbfs)
+    # Normalize (skip if audio is silent/invalid)
+    try:
+        swell = dsp_utils.normalize_audio(swell, peak_dbfs)
+    except ValueError as e:
+        print(f"  [!] Skipping swell for {stem_name}: {e}")
+        return []
 
     filename = f"{stem_name}_swell{swell_index:02d}.wav"
     return [(swell, filename)]
@@ -277,9 +285,14 @@ def make_reversed_variants(
     loop_audio = dsp_utils.time_domain_crossfade_loop(loop_audio, crossfade_ms, sr)
 
     reversed_audio = np.flip(loop_audio)
-    reversed_audio = dsp_utils.normalize_audio(
-        reversed_audio, config['global']['target_peak_dbfs']
-    )
+    # Normalize (skip if audio is silent/invalid)
+    try:
+        reversed_audio = dsp_utils.normalize_audio(
+            reversed_audio, config['global']['target_peak_dbfs']
+        )
+    except ValueError as e:
+        print(f"  [!] Skipping reversed variant for {stem_name}: {e}")
+        return []
 
     filename = f"{stem_name}_reversed.wav"
     return [(reversed_audio, filename)]

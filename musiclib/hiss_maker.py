@@ -93,8 +93,12 @@ def make_hiss_loop(
     # Keep duration stable for hiss; disable seam trimming
     hiss = dsp_utils.time_domain_crossfade_loop(hiss, crossfade_ms, sr, optimize_loop=False)
 
-    # Normalize
-    hiss = dsp_utils.normalize_audio(hiss, -6.0)  # Slightly lower than main audio
+    # Normalize (return None if audio is silent/invalid)
+    try:
+        hiss = dsp_utils.normalize_audio(hiss, -6.0)  # Slightly lower than main audio
+    except ValueError as e:
+        print(f"  [!] Cannot create hiss loop: {e}")
+        return None
 
     return hiss
 
@@ -158,8 +162,12 @@ def make_flicker_burst(
     flicker = dsp_utils.apply_fade_in(flicker, fade_in_samples)
     flicker = dsp_utils.apply_fade_out(flicker, fade_out_samples)
 
-    # Normalize
-    flicker = dsp_utils.normalize_audio(flicker, -3.0)
+    # Normalize (return None if audio is silent/invalid)
+    try:
+        flicker = dsp_utils.normalize_audio(flicker, -3.0)
+    except ValueError as e:
+        print(f"  [!] Cannot create flicker burst: {e}")
+        return None
 
     return flicker
 

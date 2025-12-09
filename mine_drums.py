@@ -9,6 +9,7 @@ Usage:
 import os
 import sys
 import argparse
+import copy
 import numpy as np
 import librosa
 import soundfile as sf
@@ -54,6 +55,16 @@ DEFAULT_CONFIG = {
         "max_saved_per_file": 2000       # Max drums to extract per file
     }
 }
+
+def deep_update(base: dict, override: dict) -> dict:
+    """Recursively merge dictionaries without losing nested defaults."""
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            deep_update(base[key], value)
+        else:
+            base[key] = value
+    return base
+
 
 def extract_drum_slices(audio: np.ndarray, sr: int, config: dict) -> list:
     """
@@ -120,10 +131,14 @@ def extract_drum_slices(audio: np.ndarray, sr: int, config: dict) -> list:
         
         drum_audio = dsp_utils.apply_fade_in(drum_audio, fade_in_samples)
         drum_audio = dsp_utils.apply_fade_out(drum_audio, fade_out_samples)
-        
-        # Normalize
-        drum_audio = dsp_utils.normalize_audio(drum_audio, config['global']['target_peak_dbfs'])
-        
+
+        # Normalize (skip if audio is silent/invalid)
+        try:
+            drum_audio = dsp_utils.normalize_audio(drum_audio, config['global']['target_peak_dbfs'])
+        except ValueError as e:
+            print(f"  [!] Skipping drum slice: {e}")
+            continue
+
         slices.append(drum_audio)
         
         if len(slices) >= dm_config['max_saved_per_file']:
@@ -138,12 +153,19 @@ def main():
     args = parser.parse_args()
     
     # Setup config
-    config = DEFAULT_CONFIG
+    config = copy.deepcopy(DEFAULT_CONFIG)
     if args.config and os.path.exists(args.config):
         with open(args.config, 'r') as f:
             user_config = yaml.safe_load(f)
-            # Update recursively (simplified here)
-            config.update(user_config)
+            if isinstance(user_config, dict):
+                deep_update(config, user_config)
+            else:
+                print(f"[!] Ignoring invalid config format in {args.config}")
+    # Basic validation of required sections
+    for section in ("paths", "global", "drum_miner"):
+        if section not in config:
+            print(f"[!] Config missing required section '{section}'")
+            return 1
             
     # Paths
     source_path = args.source

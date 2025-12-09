@@ -5,9 +5,14 @@ DSP utilities: filters, envelopes, windowing, normalization.
 import numpy as np
 from scipy import signal
 import math
+import sys
+
 try:
     import librosa
 except ImportError:
+    print("[WARNING] librosa not installed", file=sys.stderr)
+    print("  → Pitch shifting, BPM detection, key detection will be disabled", file=sys.stderr)
+    print("  → Install with: pip install librosa", file=sys.stderr)
     librosa = None
 
 
@@ -57,10 +62,16 @@ def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.nda
 
     Returns:
         Normalized audio array
+
+    Raises:
+        ValueError: If audio is silent (peak < 1e-8)
     """
     peak = np.max(np.abs(audio))
-    if peak == 0:
-        return audio
+    if peak < 1e-8:
+        raise ValueError(
+            f"Cannot normalize silent audio (peak={peak:.2e}). "
+            f"Audio is likely below noise floor or all zeros."
+        )
 
     target_linear = 10 ** (target_peak_dbfs / 20.0)
     return audio * (target_linear / peak)
@@ -405,7 +416,7 @@ def find_best_loop_trim(audio: np.ndarray, fade_length: int, search_window: int 
     """
     # Ensure mono to avoid accidental multi-channel correlation oddities
     if audio.ndim > 1:
-        audio = stereo_to_mono(audio)
+        audio = ensure_mono(audio)
 
     if search_window is None:
         search_window = 4 * fade_length
@@ -516,7 +527,7 @@ def classify_brightness(audio: np.ndarray, sr: int, centroid_low_hz: float = 150
     """
     # Ensure mono for consistent centroid measurement
     if audio.ndim > 1:
-        audio = stereo_to_mono(audio)
+        audio = ensure_mono(audio)
 
     if librosa is None:
         # Fallback if librosa not available: compute simple spectral centroid
@@ -539,9 +550,48 @@ def classify_brightness(audio: np.ndarray, sr: int, centroid_low_hz: float = 150
         return "mid"
 
 
+def ensure_mono(audio: np.ndarray) -> np.ndarray:
+    """
+    Normalize audio to mono (samples,) regardless of input convention.
+
+    Handles both librosa convention (2, samples) and soundfile convention (samples, 2).
+
+    Args:
+        audio: Input audio in any format:
+               - (samples,) -> mono, returned as-is
+               - (2, samples) -> stereo (librosa), converted to mono
+               - (samples, 2) -> stereo (soundfile), converted to mono
+
+    Returns:
+        Mono audio (samples,)
+
+    Raises:
+        ValueError: If audio has unexpected shape
+    """
+    if audio.ndim == 1:
+        return audio
+    elif audio.ndim == 2:
+        if audio.shape[0] == 2:  # librosa convention: (2, samples)
+            return np.mean(audio, axis=0)
+        elif audio.shape[1] == 2:  # soundfile convention: (samples, 2)
+            return np.mean(audio, axis=1)
+        else:
+            raise ValueError(
+                f"Unexpected stereo shape: {audio.shape}. "
+                f"Expected (2, N) or (N, 2) for stereo."
+            )
+    else:
+        raise ValueError(
+            f"Cannot convert {audio.ndim}D array to mono. "
+            f"Expected 1D or 2D audio."
+        )
+
+
 def stereo_to_mono(audio: np.ndarray) -> np.ndarray:
     """
     Convert stereo to mono (mean of channels).
+
+    DEPRECATED: Use ensure_mono() for better shape handling.
 
     Args:
         audio: Input audio (channels, samples) or (samples,)

@@ -607,8 +607,12 @@ def make_clouds_from_source(
             cloud, sr, lowpass_hz=cloud_config.get('lowpass_hz')
         )
 
-        # Normalize
-        cloud = dsp_utils.normalize_audio(cloud, peak_dbfs)
+        # Normalize (skip if audio is silent/invalid)
+        try:
+            cloud = dsp_utils.normalize_audio(cloud, peak_dbfs)
+        except ValueError as e:
+            print(f"  [!] Skipping cloud {i+1} for {stem_name}: {e}")
+            continue
 
         # Convert to stereo if requested
         if clouds_stereo:

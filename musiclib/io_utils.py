@@ -76,6 +76,22 @@ def save_audio(
     Returns:
         True if successful, False otherwise
     """
+    # Prevent accidental writes outside the export root unless explicitly allowed
+    export_root = Path(os.environ.get("AFTERGLOW_EXPORT_ROOT", "export")).resolve()
+    abs_path = Path(filepath).resolve()
+    try:
+        if not abs_path.is_relative_to(export_root):
+            print(f"  [!] Refusing to write outside export root ({export_root}): {abs_path}")
+            return False
+    except Exception:
+        # Fallback for Python versions without is_relative_to; compare common path
+        # Ensure symlinks are fully resolved before checking parents
+        abs_path_resolved = abs_path.resolve()
+        export_root_resolved = export_root.resolve()
+        if export_root_resolved not in abs_path_resolved.parents and abs_path_resolved != export_root_resolved:
+            print(f"  [!] Refusing to write outside export root ({export_root_resolved}): {abs_path_resolved}")
+            return False
+
     # Validate bit depth before attempting save
     if bit_depth not in {16, 24}:
         print(f"  [!] Invalid bit_depth={bit_depth} for {filepath}. Use 16 or 24.")
@@ -83,7 +99,7 @@ def save_audio(
 
     try:
         # Create parent directories if needed
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        os.makedirs(abs_path.parent, exist_ok=True)
 
         # Determine subtype based on bit depth
         if bit_depth == 16:
@@ -91,10 +107,11 @@ def save_audio(
         else:  # bit_depth == 24
             subtype = 'PCM_24'
 
-        sf.write(filepath, audio, sr, subtype=subtype)
+        # Write to the resolved path (not original string) for consistency with security checks
+        sf.write(str(abs_path), audio, sr, subtype=subtype)
         return True
     except Exception as e:
-        print(f"  [!] Failed to save {filepath}: {e}")
+        print(f"  [!] Failed to save {str(abs_path)}: {e}")
         return False
 
 
