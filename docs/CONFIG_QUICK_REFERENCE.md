@@ -1,4 +1,4 @@
-# Configuration Quick Reference (v0.6)
+# Configuration Quick Reference (v0.7)
 
 Quick lookup guide for the key configuration blocks. See `config.yaml` and `CHANGELOG.md` for full details.
 
@@ -102,6 +102,7 @@ clouds:
   overlap_ratio: 0.65                   # Grain overlap (0.5-1.0)
   lowpass_hz: 8000                      # Post-processing LPF
   clouds_per_source: 2                  # Clouds per source
+  target_peak_dbfs: -3.0                # Gentler normalization to avoid saturation on dense overlaps
 ```
 
 **Examples**:
@@ -125,6 +126,9 @@ overlap_ratio: 0.8
 
 # No post-filtering
 lowpass_hz: 0
+
+# Softer output with headroom
+target_peak_dbfs: -3.0
 ```
 
 ---
@@ -185,6 +189,9 @@ export:                                 # Stereo/mono control
   swells_stereo: false                  # Mono swells (default)
   clouds_stereo: false                  # Mono clouds (default)
   hiss_stereo: false                    # Mono hiss (default)
+
+reproducibility:
+  random_seed: null                     # Set to an int for deterministic grain placement/runs
 ```
 
 **Examples**:

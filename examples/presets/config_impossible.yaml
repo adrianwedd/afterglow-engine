@@ -1,0 +1,140 @@
+# Optimized configuration for "The Impossible" - Maximum Extraction
+# Tuned for highly tonal material with rich harmonic content
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  pad_sources_dir: pad_sources
+  drums_dir: drums
+  export_dir: export/tr8s
+
+# PAD MINER: Extract MANY pads with varied durations
+pad_miner:
+  # Multiple target durations for variety
+  target_durations_sec: [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0]  # 8 different lengths
+
+  # Wider RMS range to capture more material (this track has 65dB dynamic range)
+  min_rms_db: -55.0                             # Capture quieter sustained regions
+  max_rms_db: -6.0                              # Up to the loudest parts
+
+  # Relaxed onset rate (track has 3.13 onsets/sec mixed character)
+  max_onset_rate_per_second: 4.0                # Allow slightly more movement
+
+  # Strict tonality (track is 94% harmonic, flatness 0.018)
+  spectral_flatness_threshold: 0.3              # Very strict: prefer tonal material
+
+  # Extract MANY pads per file
+  max_candidates_per_file: 12                   # Extract up to 12 best pads
+
+  # Smooth loop crossfades
+  loop_crossfade_ms: 150                        # Longer crossfade for smoothness
+
+  # Dense analysis windows
+  window_hop_sec: 0.25                          # More frequent analysis (every 0.25s)
+
+# DRONES/SWELLS: Create MANY variations with extreme processing
+drones:
+  # Pad loop parameters
+  pad_loop_duration_sec: 2.5                    # Slightly longer base loop
+
+  # All three variants
+  pad_variants:
+    - warm
+    - airy
+    - dark
+
+  # Tonal filtering
+  warm_lowpass_hz: 4000                         # Warm but bright (track has good highs)
+  airy_highpass_hz: 5000                        # Ethereal high-pass
+  dark_high_cut_hz: 1000                        # Deep, rumbling dark variant
+
+  # LONG swells with dramatic fades
+  swell_duration_sec: 12.0                      # Long, evolving swells
+  fade_in_sec: 2.0                              # Slow crescendo
+  fade_out_sec: 4.0                             # Extended decay
+
+  # MANY pitch and time variations
+  pitch_shift_semitones: [-7, -5, 0, 3, 5, 7, 12, 19]  # 8 pitch variants (octave up/down)
+  time_stretch_factors: [0.75, 1.0, 1.25, 1.5, 2.0, 2.5]  # 6 stretch factors
+  enable_reversal: true                         # Reversed variants too
+
+# PRE-ANALYSIS: Strict quality filtering for best grains
+pre_analysis:
+  enabled: true
+  analysis_window_sec: 1.0
+  analysis_hop_sec: 0.4                         # Dense analysis
+
+  # Stability filters (tuned for tonal material)
+  max_onset_rate_hz: 4.0                        # Allow some movement
+  min_rms_db: -55.0                             # Capture quiet beds
+  max_rms_db: -6.0                              # Up to loud sections
+  max_dc_offset: 0.03                           # Strict DC check
+  max_crest_factor: 15.0                        # Allow some dynamics
+
+  # High quality bar
+  grain_quality_threshold: 0.5                  # Medium-high quality
+  min_stable_windows: 2                         # Require 0.8s stability
+  skip_clipped_regions: true
+  skip_transient_regions: true
+
+# HISS: Extract high-frequency air and dust
+hiss:
+  # Longer hiss loops
+  loop_duration_sec: 2.5                        # Longer textures
+
+  # Band-pass for focused "air"
+  highpass_hz: 5000                             # High-frequency content
+  bandpass_low_hz: 3500                         # Lower for more presence
+  bandpass_high_hz: 16000                       # Up to near-Nyquist
+  use_bandpass: true
+
+  # Subtle tremolo modulation
+  tremolo_rate_hz: 2.0                          # Slow breathing
+  tremolo_depth: 0.4                            # Gentle modulation
+
+  # Generate MANY hiss variations
+  hiss_loops_per_source: 6                      # 6 loop variants
+
+  # Flicker bursts (transient high-freq dust)
+  flicker_min_ms: 25                            # Very short
+  flicker_max_ms: 600                           # Up to longer bursts
+  flicker_count: 12                             # Many flicker one-shots
+
+  # No synthetic noise (use source material only)
+  use_synthetic_noise: false
+
+# Export settings
+export:
+  pads_stereo: false                            # Mono pads
+  swells_stereo: true                           # Stereo swells for width
+  clouds_stereo: false                          # Not generating clouds
+  hiss_stereo: true                             # Stereo hiss for spatial texture
+
+# Brightness tags for organization
+brightness_tags:
+  enabled: true
+  centroid_low_hz: 1500                         # Dark/bright threshold
+  centroid_high_hz: 4500                        # Bright/very bright threshold
+
+# Quality thresholds
+curation:
+  auto_delete_grade_f: false                    # Keep everything
+  thresholds:
+    min_rms_db: -70.0                           # Very permissive
+    clipping_tolerance: 0.01
+    max_crest_factor: 30.0
+
+# Musical awareness (disabled for maximum flexibility)
+musicality:
+  reference_bpm: null
+  snap_to_grid: false
+  bar_lengths: [1, 2, 4]
+  target_key: null
+
+# Reproducibility
+reproducibility:
+  random_seed: 42                               # Fixed seed for consistent results

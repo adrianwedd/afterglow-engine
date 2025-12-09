@@ -427,4 +427,4 @@ All outputs:
 
 ## License
 
-Use this tool freely for your own sound design workflows. See [LICENSE](LICENSE) for full details. There is no warranty; you are responsible for how you use it within your own archive and workflow.
+Use this tool freely for your own sound design workflows. See [LICENSE](LICENSE) for full details. There is no warranty; you are responsible for how you use it within your own archive and workflow. For reproducible experiments, set `reproducibility.random_seed` in your config; clouds default to a softer `target_peak_dbfs` (-3 dBFS) so overlapping grains don’t saturate.

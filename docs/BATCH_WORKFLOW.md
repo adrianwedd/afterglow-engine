@@ -1,6 +1,6 @@
 # Batch Audio Archaeology Workflow
 
-A concise, current workflow for running batch mining, curation, and formatting with the scripts that ship in this repo.
+A concise, current workflow for running batch mining, curation, and formatting with the scripts that ship in this repo—our quiet machine for excavating surfaces, atmosphere, and dust.
 
 ## Quick Start
 
@@ -16,6 +16,8 @@ python format_for_tr8s.py --input_dir export/MY_BATCH --output_dir export/MY_BAT
 ```
 
 Outputs live under `export/<project_name>/...` with per-source subfolders for pads, swells, clouds, hiss, drums, and silences.
+
+If you need deterministic A/B runs while tuning, set `reproducibility.random_seed` in your config; grain placement and pitch draws will repeat, letting you hear the effect of a single change.
 
 ## Step-by-Step
 
@@ -49,3 +51,4 @@ Tips:
 ## Performance Notes
 - Large/long files can consume significant RAM when decoded; consider pre-splitting or adding duration filters if processing hour-long recordings.
 - For faster curation, use `soundfile` for simple level checks and reserve `librosa` for spectral features.
+- Clouds normalize gently to ~-3 dBFS to keep overlapping grains from saturating. If you want hotter clouds, raise `clouds.target_peak_dbfs` in the config—but leave a little headroom for the texture to breathe.

@@ -63,3 +63,4 @@ archive/scripts/
 *.bak
 .git-help
 archive/
+.hypothesis/
