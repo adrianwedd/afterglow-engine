@@ -11,16 +11,19 @@ def create_sine_wave(filepath, duration_sec=1.0, sr=44100, freq=440.0):
     audio = 0.1 * np.sin(2 * np.pi * freq * t)
     sf.write(filepath, audio, sr)
 
-def test_full_pipeline_integration(tmp_path):
+def test_full_pipeline_integration(tmp_path, monkeypatch):
     """
     Integration test that runs the full pipeline on synthetic data.
     """
+    # Set AFTERGLOW_EXPORT_ROOT to allow writes to tmp_path (for security checks)
+    monkeypatch.setenv("AFTERGLOW_EXPORT_ROOT", str(tmp_path))
+
     # Setup directory structure
     source_dir = tmp_path / "source_audio"
     pad_sources_dir = tmp_path / "pad_sources"
     drums_dir = tmp_path / "drums"
     export_dir = tmp_path / "export"
-    
+
     source_dir.mkdir()
     pad_sources_dir.mkdir()
     drums_dir.mkdir()
