@@ -126,7 +126,9 @@ class AudioAnalyzer:
             # Use cached STFT to avoid redundant computation
             S = self._get_stft()
             # Get per-STFT-frame centroid values
-            centroid_frames = librosa.feature.spectral_centroid(S=S, sr=self.sr)[0]
+            # spectral_centroid needs power spectrogram (magnitude squared)
+            S_power = np.abs(S)**2
+            centroid_frames = librosa.feature.spectral_centroid(S=S_power, sr=self.sr)[0]
 
             # Average centroid over each analysis window
             # (STFT hop is typically 512 samples; analysis hop is ~22050 samples)
