@@ -20,7 +20,7 @@ The clouds emerge cleaner now. Where grains once clashed and folded, they breath
 *   **Phase 3 Optimizations:**
     *   STFT result caching in `AudioAnalyzer` and `segment_miner` (eliminates redundant computation).
     *   Golden audio fixtures for regression testing (9 deterministic reference files).
-    *   Property-based testing with Hypothesis (9 tests catching edge cases).
+    *   Property-based testing with Hypothesis (8 active tests; 3 commented where properties don't hold for pathological inputs).
 *   **Robustness:**
     *   Crest factor guards prevent division by zero on silent audio (3 locations).
     *   Phase-aware stereo→mono conversion with `method` parameter (`average`, `sum`, `left`, `right`).

@@ -117,7 +117,7 @@ class AudioAnalyzer:
         Compute windowed spectral centroid.
 
         Returns:
-            Array of centroid frequencies (Hz) for each window
+            Array of centroid frequencies (Hz) for each analysis window
         """
         if self._spectral_centroid is not None:
             return self._spectral_centroid
@@ -125,9 +125,29 @@ class AudioAnalyzer:
         try:
             # Use cached STFT to avoid redundant computation
             S = self._get_stft()
-            centroid = librosa.feature.spectral_centroid(S=S, sr=self.sr)[0]
-            self._spectral_centroid = centroid
-            return centroid
+            # Get per-STFT-frame centroid values
+            centroid_frames = librosa.feature.spectral_centroid(S=S, sr=self.sr)[0]
+
+            # Average centroid over each analysis window
+            # (STFT hop is typically 512 samples; analysis hop is ~22050 samples)
+            centroid_values = []
+            stft_hop_length = 512  # librosa default
+            for start in range(0, len(self.audio) - self.window_size_samples + 1, self.hop_samples):
+                end = start + self.window_size_samples
+                # Map analysis window to STFT frame indices
+                start_frame = librosa.samples_to_frames(start, hop_length=stft_hop_length)
+                end_frame = librosa.samples_to_frames(end, hop_length=stft_hop_length)
+                # Average centroid over this window's frames
+                if end_frame > start_frame and end_frame <= len(centroid_frames):
+                    avg_centroid = np.mean(centroid_frames[start_frame:end_frame])
+                elif start_frame < len(centroid_frames):
+                    avg_centroid = np.mean(centroid_frames[start_frame:])
+                else:
+                    avg_centroid = 2000.0  # Fallback for edge case
+                centroid_values.append(avg_centroid)
+
+            self._spectral_centroid = np.array(centroid_values) if centroid_values else np.array([2000.0])
+            return self._spectral_centroid
         except Exception:
             self._spectral_centroid = np.array([2000.0] * len(self._compute_rms_curve()))
             return self._spectral_centroid
