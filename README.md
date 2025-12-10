@@ -114,7 +114,13 @@ This will:
 
 ## What's New
 
-Latest: **v0.8.0 – Refined Clouds**
+Latest: **v0.8.1 – Documentation & Tutorial**
+
+A documentation patch adding a comprehensive 15-minute getting started guide. No functional changes from v0.8.0.
+
+---
+
+**v0.8.0 – Refined Clouds**
 
 **UX Enhancements:**
 * **Progress bars** – Visual feedback during long operations (tqdm)
@@ -178,14 +184,19 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history or [TUTORIAL.md](docs/
 
 ## Testing (smoke & verification)
 
-* **Minimal regression suite**:
-  `python test_review_fixes.py`
-  Uses the current venv; covers pre-analysis wiring, stability masks, pitch-shift guards, logging toggles, and threshold effects.
+* **Full test suite**:
+  ```bash
+  pytest
+  ```
+  73 tests covering DSP validation, spectral analysis, crossfades, grain synthesis, batch tools, and curation logic.
 
 * **Determinism**:
   Set `reproducibility.random_seed` in your config to make test runs repeatable.
 
-If you use `pytest`, you can also add a simple `pytest` entrypoint later.
+* **Performance profiling**:
+  ```bash
+  python tests/profile_performance.py
+  ```
 
 ---
 
