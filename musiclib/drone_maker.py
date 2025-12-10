@@ -5,6 +5,7 @@ Drone/pad/swell maker: generate pad loops and swells with processing variants.
 from typing import List, Tuple
 import numpy as np
 import librosa
+from tqdm import tqdm
 from . import io_utils, dsp_utils, music_theory
 
 
@@ -322,33 +323,33 @@ def process_pad_sources(config: dict) -> dict:
     print(f"\n[DRONE MAKER] Processing {len(files)} pad source file(s)...")
 
     results = {}
-    for filepath in files:
+    for filepath in tqdm(files, desc="Processing drones", unit="file"):
         stem = io_utils.get_filename_stem(filepath)
-        print(f"  Processing: {stem}")
+        tqdm.write(f"  Processing: {stem}")
 
         audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
         if audio is None:
             continue
-            
+
         # Musical Analysis
         detected_key = music_theory.detect_key(audio, sr)
         bpm, conf = music_theory.detect_bpm(audio, sr)
-        
+
         musical_context = {
             "key": detected_key,
             "bpm": bpm if conf > 0.4 else None
         }
-        
+
         transposition = 0
         if target_key and detected_key:
             transposition = music_theory.get_transposition_interval(detected_key, target_key)
             musical_context["transposition_semitones"] = transposition
-            print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
+            tqdm.write(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
         elif detected_key:
-            print(f"    > Detected Key: {detected_key}")
-            
+            tqdm.write(f"    > Detected Key: {detected_key}")
+
         if musical_context["bpm"]:
-            print(f"    > Detected BPM: {musical_context['bpm']:.1f}")
+            tqdm.write(f"    > Detected BPM: {musical_context['bpm']:.1f}")
 
         # Get all pitch/stretch variants
         drone_config = config['drones']
@@ -380,7 +381,7 @@ def process_pad_sources(config: dict) -> dict:
             "outputs": outputs,
             "context": musical_context
         }
-        print(f"    → Generated {len(outputs)} audio file(s)")
+        tqdm.write(f"    → Generated {len(outputs)} audio file(s)")
 
     return results
 

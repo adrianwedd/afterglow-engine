@@ -4,6 +4,7 @@ Hiss/air texture generator: create high-frequency layers and flicker bursts.
 
 from typing import List, Tuple
 import numpy as np
+from tqdm import tqdm
 from . import io_utils, dsp_utils, music_theory
 
 
@@ -196,21 +197,21 @@ def process_hiss_from_drums(config: dict) -> dict:
     print(f"\n[HISS MAKER] Processing {len(files)} drum file(s)...")
 
     results = {}
-    for filepath in files:
+    for filepath in tqdm(files, desc="Processing hiss", unit="file"):
         stem = io_utils.get_filename_stem(filepath)
-        print(f"  Processing: {stem}")
+        tqdm.write(f"  Processing: {stem}")
 
         audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
         if audio is None:
             continue
-            
+
         # Musical Analysis (context)
         detected_key = music_theory.detect_key(audio, sr)
         bpm, conf = music_theory.detect_bpm(audio, sr)
         if detected_key:
-            print(f"    > Detected Key: {detected_key}")
+            tqdm.write(f"    > Detected Key: {detected_key}")
         if conf > 0.4:
-            print(f"    > Detected BPM: {bpm:.1f}")
+            tqdm.write(f"    > Detected BPM: {bpm:.1f}")
 
         outputs = []
 
@@ -254,7 +255,7 @@ def process_hiss_from_drums(config: dict) -> dict:
             "outputs": outputs,
             "context": musical_context
         }
-        print(f"    → Generated {len(outputs)} hiss audio file(s)")
+        tqdm.write(f"    → Generated {len(outputs)} hiss audio file(s)")
 
     return results
 

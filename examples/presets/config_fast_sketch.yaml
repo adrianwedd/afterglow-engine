@@ -1,0 +1,89 @@
+# Fast Sketch Preset - Optimized for Quick Experimentation
+# Use when: Rapid iteration, testing source material, quick prototyping
+# Speed improvement: ~60% faster than default config
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 16          # 16-bit for faster I/O
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  pad_sources_dir: pad_sources
+  drums_dir: drums
+  export_dir: export/tr8s
+
+# PAD MINER: Minimal extraction
+pad_miner:
+  target_durations_sec: [2.5]   # Single duration
+  min_rms_db: -40.0
+  max_rms_db: -10.0
+  max_onset_rate_per_second: 3.0
+  spectral_flatness_threshold: 0.5
+  max_candidates_per_file: 2    # Just 2 pads per file
+  loop_crossfade_ms: 100
+  window_hop_sec: 0.5
+
+# DRONES: Minimal variations
+drones:
+  pad_loop_duration_sec: 2.0
+  pad_variants: [warm]          # Only one variant
+  warm_lowpass_hz: 3000
+  airy_highpass_hz: 6000
+  dark_high_cut_hz: 1000
+
+  swell_duration_sec: 6.0
+  fade_in_sec: 0.5
+  fade_out_sec: 1.5
+
+  pitch_shift_semitones: [0, 7] # Only 2 pitch shifts
+  time_stretch_factors: [1.0, 1.5] # Only 2 stretches
+  enable_reversal: false        # Skip reversed variants
+
+# PRE-ANALYSIS: Disabled for speed
+pre_analysis:
+  enabled: false                # Skip pre-analysis (faster)
+
+# CLOUDS: Fewer, smaller clouds
+clouds:
+  grain_length_min_ms: 50
+  grain_length_max_ms: 100
+  grains_per_cloud: 150         # Fewer grains
+  cloud_duration_sec: 4.0       # Shorter clouds
+  pitch_shift_range:
+    min: 0                      # No pitch shifting (faster)
+    max: 0
+  overlap_ratio: 0.65
+  lowpass_hz: 8000
+  clouds_per_source: 1          # Only 1 cloud per source
+  target_peak_dbfs: -3.0
+
+# HISS: Minimal generation
+hiss:
+  loop_duration_sec: 2.0
+  highpass_hz: 6000
+  use_bandpass: false           # Skip bandpass (faster)
+  tremolo_rate_hz: 2.0
+  tremolo_depth: 0.3
+  hiss_loops_per_source: 1      # Only 1 loop
+  flicker_count: 1              # Only 1 flicker
+  flicker_min_ms: 100
+  flicker_max_ms: 300
+
+# EXPORT: Disable stereo and brightness tags
+export:
+  pads_stereo: false
+  clouds_stereo: false
+
+brightness_tags:
+  enabled: false                # Skip brightness classification
+
+# CURATION: Auto-delete low-quality outputs
+curation:
+  auto_delete_grade_f: true
+
+  thresholds:
+    min_rms_db: -60.0
+    max_rms_db: -1.0
+    max_dc_offset: 0.15
+    max_crest_factor: 20.0

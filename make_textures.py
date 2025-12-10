@@ -196,6 +196,97 @@ def run_make_clouds(config: dict) -> None:
         print(f"\n[!] No clouds generated (check {config['paths']['pad_sources_dir']})")
 
 
+def dry_run_preview(config: dict, operations: list) -> None:
+    """
+    Preview what would be generated without creating files.
+
+    Args:
+        config: Configuration dictionary
+        operations: List of operation names ['mine_pads', 'make_drones', etc.]
+    """
+    print("\n" + "=" * 60)
+    print(" DRY RUN PREVIEW")
+    print("=" * 60)
+    print("\nNo files will be created. Scanning source directories...\n")
+
+    total_estimate = 0
+
+    if 'mine_pads' in operations:
+        source_dir = config['paths']['source_audio_dir']
+        files = io_utils.discover_audio_files(source_dir)
+        max_candidates = config['pad_miner']['max_candidates_per_file']
+        estimate = len(files) * max_candidates
+        total_estimate += estimate
+
+        print(f"[MINE PADS]")
+        print(f"  Source directory: {source_dir}")
+        print(f"  Audio files found: {len(files)}")
+        print(f"  Max candidates per file: {max_candidates}")
+        print(f"  → Estimated pads: ~{estimate}")
+        print()
+
+    if 'make_drones' in operations:
+        pad_sources_dir = config['paths']['pad_sources_dir']
+        files = io_utils.discover_audio_files(pad_sources_dir)
+
+        # Estimate: pads + swells per source
+        variants = len(config['drones'].get('pad_variants', ['warm']))
+        pitch_shifts = len(config['drones'].get('pitch_shift_semitones', [0]))
+        time_stretches = len(config['drones'].get('time_stretch_factors', [1.0]))
+        reversal = 2 if config['drones'].get('enable_reversal', False) else 1
+
+        pads_per_source = variants * pitch_shifts * time_stretches * reversal
+        swells_per_source = pitch_shifts * time_stretches * reversal
+
+        total_drones = len(files) * (pads_per_source + swells_per_source)
+        total_estimate += total_drones
+
+        print(f"[MAKE DRONES]")
+        print(f"  Source directory: {pad_sources_dir}")
+        print(f"  Audio files found: {len(files)}")
+        print(f"  Variants: {variants} pad types × {pitch_shifts} pitches × {time_stretches} stretches × {reversal} directions")
+        print(f"  → Estimated pads: ~{len(files) * pads_per_source}")
+        print(f"  → Estimated swells: ~{len(files) * swells_per_source}")
+        print()
+
+    if 'make_clouds' in operations:
+        pad_sources_dir = config['paths']['pad_sources_dir']
+        files = io_utils.discover_audio_files(pad_sources_dir)
+        clouds_per_source = config['clouds'].get('clouds_per_source', 2)
+        estimate = len(files) * clouds_per_source
+        total_estimate += estimate
+
+        print(f"[MAKE CLOUDS]")
+        print(f"  Source directory: {pad_sources_dir}")
+        print(f"  Audio files found: {len(files)}")
+        print(f"  Clouds per source: {clouds_per_source}")
+        print(f"  Grains per cloud: {config['clouds'].get('grains_per_cloud', 200)}")
+        print(f"  → Estimated clouds: ~{estimate}")
+        print()
+
+    if 'make_hiss' in operations:
+        drums_dir = config['paths']['drums_dir']
+        files = io_utils.discover_audio_files(drums_dir)
+        loops_per_source = config['hiss'].get('hiss_loops_per_source', 2)
+        flickers = config['hiss'].get('flicker_count', 4)
+        estimate = len(files) * (loops_per_source + flickers)
+        total_estimate += estimate
+
+        print(f"[MAKE HISS]")
+        print(f"  Source directory: {drums_dir}")
+        print(f"  Audio files found: {len(files)}")
+        print(f"  Loops per source: {loops_per_source}")
+        print(f"  Flickers per source: {flickers}")
+        print(f"  → Estimated textures: ~{estimate}")
+        print()
+
+    print("=" * 60)
+    print(f" TOTAL ESTIMATED OUTPUT: ~{total_estimate} files")
+    print(f" Export directory: {config['paths']['export_dir']}")
+    print("=" * 60)
+    print("\nTo generate these files, run without --dry-run flag.")
+
+
 def run_make_hiss(config: dict) -> None:
     """Execute hiss/flicker generation."""
     hiss_dict = hiss_maker.make_all_hiss(config)
@@ -213,6 +304,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  python make_textures.py --all --dry-run    # Preview what would be generated
   python make_textures.py --all              # Generate everything
   python make_textures.py --mine-pads        # Extract pads from source_audio/
   python make_textures.py --make-drones      # Create loops & swells from pad_sources/
@@ -252,6 +344,11 @@ Examples:
         default='config.yaml',
         help='Path to config.yaml (default: config.yaml)'
     )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Preview what would be generated without creating files'
+    )
 
     args = parser.parse_args()
 
@@ -275,7 +372,23 @@ Examples:
         dsp_utils.set_random_seed(random_seed)
         print(f"[*] Random seed set to {random_seed} (reproducible mode)")
 
-    # Ensure all required directories exist
+    # Determine which operations to run
+    operations = []
+    if args.all or args.mine_pads:
+        operations.append('mine_pads')
+    if args.all or args.make_drones:
+        operations.append('make_drones')
+    if args.all or args.make_clouds:
+        operations.append('make_clouds')
+    if args.all or args.make_hiss:
+        operations.append('make_hiss')
+
+    # Handle dry-run mode
+    if args.dry_run:
+        dry_run_preview(config, operations)
+        return 0
+
+    # Normal execution mode
     ensure_directories(config)
 
     print("\n" + "=" * 60)
@@ -283,16 +396,16 @@ Examples:
     print("=" * 60)
 
     # Run requested operations
-    if args.all or args.mine_pads:
+    if 'mine_pads' in operations:
         run_mine_pads(config)
 
-    if args.all or args.make_drones:
+    if 'make_drones' in operations:
         run_make_drones(config)
 
-    if args.all or args.make_clouds:
+    if 'make_clouds' in operations:
         run_make_clouds(config)
 
-    if args.all or args.make_hiss:
+    if 'make_hiss' in operations:
         run_make_hiss(config)
 
     # Emit manifest if any rows were collected

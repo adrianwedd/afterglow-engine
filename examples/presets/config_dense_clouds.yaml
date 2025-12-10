@@ -1,0 +1,112 @@
+# Dense Clouds Preset - Optimized for Rich Granular Textures
+# Use when: Creating evolving ambient textures, cinematic beds, granular synthesis
+# Focus: Maximum grain density, long evolution, wide pitch variation
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  pad_sources_dir: pad_sources
+  drums_dir: drums
+  export_dir: export/tr8s
+
+# PAD MINER: Standard extraction (clouds are the focus)
+pad_miner:
+  target_durations_sec: [2.5]
+  min_rms_db: -45.0
+  max_rms_db: -10.0
+  max_onset_rate_per_second: 3.0
+  spectral_flatness_threshold: 0.5
+  max_candidates_per_file: 3
+  loop_crossfade_ms: 100
+  window_hop_sec: 0.5
+
+# DRONES: Minimal (focus is on clouds)
+drones:
+  pad_loop_duration_sec: 2.0
+  pad_variants: [warm]
+  warm_lowpass_hz: 3000
+  airy_highpass_hz: 6000
+  dark_high_cut_hz: 1000
+
+  swell_duration_sec: 6.0
+  fade_in_sec: 0.5
+  fade_out_sec: 1.5
+
+  pitch_shift_semitones: [0]
+  time_stretch_factors: [1.0]
+  enable_reversal: false
+
+# PRE-ANALYSIS: Enabled for grain quality
+pre_analysis:
+  enabled: true
+  analysis_window_sec: 1.0
+  analysis_hop_sec: 0.5
+
+  max_onset_rate_hz: 4.0        # Prefer stable regions
+  min_rms_db: -50.0
+  max_rms_db: -10.0
+  max_dc_offset: 0.05
+  max_crest_factor: 10.0
+
+  grain_quality_threshold: 0.65 # High quality grains
+  min_stable_windows: 3
+  skip_clipped_regions: true
+  skip_transient_regions: true
+
+# CLOUDS: Maximum density and variation
+clouds:
+  grain_length_min_ms: 30       # Short grains for granular shimmer
+  grain_length_max_ms: 150      # Wide range for texture variety
+
+  grains_per_cloud: 600         # DENSE (2x typical)
+
+  cloud_duration_sec: 12.0      # Long clouds for evolution
+
+  pitch_shift_range:
+    min: -12                    # Wide pitch range for harmonic richness
+    max: 12
+
+  overlap_ratio: 0.75           # High overlap for smooth legato
+  lowpass_hz: 10000             # Keep brightness
+  clouds_per_source: 6          # Multiple clouds per source
+  target_peak_dbfs: -6.0        # Conservative normalization (dense overlaps)
+
+# HISS: Minimal (focus is on clouds)
+hiss:
+  loop_duration_sec: 2.0
+  highpass_hz: 6000
+  use_bandpass: false
+  tremolo_rate_hz: 2.0
+  tremolo_depth: 0.3
+  hiss_loops_per_source: 1
+  flicker_count: 1
+  flicker_min_ms: 100
+  flicker_max_ms: 300
+
+# EXPORT: Stereo clouds for width
+export:
+  pads_stereo: false
+  clouds_stereo: true           # Stereo clouds for immersive field
+
+brightness_tags:
+  enabled: true
+  centroid_low_hz: 1500
+  centroid_high_hz: 3500
+
+# REPRODUCIBILITY: Fixed seed for consistent results
+reproducibility:
+  random_seed: 808              # Fixed seed for grain placement
+
+# CURATION: Keep everything
+curation:
+  auto_delete_grade_f: false
+
+  thresholds:
+    min_rms_db: -60.0
+    max_rms_db: -1.0
+    max_dc_offset: 0.15
+    max_crest_factor: 20.0

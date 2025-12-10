@@ -6,6 +6,7 @@ from typing import List, Tuple
 from pathlib import Path
 import numpy as np
 import librosa
+from tqdm import tqdm
 from . import io_utils, dsp_utils, audio_analyzer
 
 
@@ -314,14 +315,14 @@ def mine_all_pads(config: dict) -> dict:
     print(f"\n[PAD MINER] Processing {len(files)} file(s)...")
 
     results = {}
-    for filepath in files:
+    for filepath in tqdm(files, desc="Mining pads", unit="file"):
         stem = io_utils.get_filename_stem(filepath)
-        print(f"  Processing: {stem}")
+        tqdm.write(f"  Processing: {stem}")
 
         pads = mine_pads_from_file(filepath, config)
         if pads:
             results[stem] = pads
-            print(f"    → Found {len(pads)} pad candidate(s)")
+            tqdm.write(f"    → Found {len(pads)} pad candidate(s)")
 
     return results
 

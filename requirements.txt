@@ -5,3 +5,4 @@ scipy==1.11.4
 PyYAML==6.0.1
 pytest==9.0.1
 hypothesis==6.100.0
+tqdm==4.66.1

@@ -17,6 +17,7 @@ from typing import List, Tuple
 import numpy as np
 import librosa
 from scipy import signal
+from tqdm import tqdm
 from . import io_utils, dsp_utils, audio_analyzer
 from . import music_theory
 
@@ -684,40 +685,40 @@ def process_cloud_sources(config: dict) -> dict:
 
     results = {}
     try:
-        for filepath in files:
+        for filepath in tqdm(files, desc="Generating clouds", unit="file"):
             stem = io_utils.get_filename_stem(filepath)
-            print(f"  Processing: {stem}")
+            tqdm.write(f"  Processing: {stem}")
 
             audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
             if audio is None:
                 continue
-                
+
             # Musical Analysis
             detected_key = music_theory.detect_key(audio, sr)
             bpm, conf = music_theory.detect_bpm(audio, sr)
-            
+
             transposition = 0
             if target_key and detected_key:
                 transposition = music_theory.get_transposition_interval(detected_key, target_key)
-                print(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
+                tqdm.write(f"    > Detected Key: {detected_key} -> Target: {target_key} (Shift: {transposition:+d})")
             elif detected_key:
-                print(f"    > Detected Key: {detected_key}")
-                
+                tqdm.write(f"    > Detected Key: {detected_key}")
+
             if conf > 0.4:
-                print(f"    > Detected BPM: {bpm:.1f}")
+                tqdm.write(f"    > Detected BPM: {bpm:.1f}")
 
             clouds = make_clouds_from_source(audio, sr, stem, config, transposition_semitones=transposition, detected_bpm=bpm if conf > 0.4 else None)
-            
+
             musical_context = {
                 "key": detected_key,
                 "bpm": bpm if conf > 0.4 else None
             }
-            
+
             results[stem] = {
                 "outputs": clouds,
                 "context": musical_context
             }
-            print(f"    → Generated {len(clouds)} cloud(s)")
+            tqdm.write(f"    → Generated {len(clouds)} cloud(s)")
     finally:
         if prev_state is not None:
             np.random.set_state(prev_state)
