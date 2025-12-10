@@ -35,17 +35,17 @@ paths:
   source_audio_dir: source_audio
   pad_sources_dir: pad_sources
   drums_dir: drums
-  export_dir: export
+  export_dir: export/tr8s     # Output directory (TR-8S compatible)
 
 # Pad miner settings (sustained segment extraction)
 pad_miner:
-  target_duration_sec: 2.0              # Duration of extracted pad segments
+  target_durations_sec: [2.0] # List of durations for extracted pads (v0.8)
   min_rms_db: -40.0                     # Minimum RMS level (dB)
   max_rms_db: -10.0                     # Maximum RMS level (dB) - too loud = reject
   max_onset_rate_per_second: 3.0        # Max onsets/sec (too high = too percussive)
   spectral_flatness_threshold: 0.5      # Lower = more tonal (0-1 scale)
   max_candidates_per_file: 3            # How many pads to extract per source file
-  crossfade_ms: 100                     # Crossfade length for loop smoothing
+  loop_crossfade_ms: 100                # Loop smoothing crossfade (v0.8)
   window_hop_sec: 0.5                   # Hop size for sliding window analysis
 
 # Drone / pad / swell maker settings
@@ -78,18 +78,23 @@ clouds:
   grain_length_max_ms: 150              # Maximum grain length
   grains_per_cloud: 200                 # Number of grains per cloud
   cloud_duration_sec: 6.0               # Target output duration
-  max_pitch_shift_semitones: 7          # Max random pitch shift per grain
+
+  pitch_shift_range:                    # Bidirectional pitch range (v0.8)
+    min: -7                             # Lower bound (semitones)
+    max: 7                              # Upper bound (semitones)
+
   overlap_ratio: 0.65                   # Grain overlap (0.5-1.0)
   lowpass_hz: 8000                      # Post-processing low-pass (optional)
   clouds_per_source: 2                  # Number of cloud variations per source
+  target_peak_dbfs: -3.0                # Gentler normalization for dense overlaps
 
 # Hiss / air texture settings
 hiss:
   # Hiss loop parameters
   loop_duration_sec: 1.5                # Duration of hiss loops
   highpass_hz: 6000                     # High-pass cutoff for noise
-  band_low_hz: 4000                     # Band-pass low cutoff (optional)
-  band_high_hz: 14000                   # Band-pass high cutoff (optional)
+  bandpass_low_hz: 4000                 # Band-pass low cutoff (v0.8)
+  bandpass_high_hz: 14000               # Band-pass high cutoff (v0.8)
   use_bandpass: true                    # Use band-pass instead of high-pass
   tremolo_rate_hz: 3.0                  # Amplitude modulation rate
   tremolo_depth: 0.6                    # Tremolo depth (0-1)
@@ -103,6 +108,19 @@ hiss:
   # Synthetic noise fallback
   use_synthetic_noise: true             # Use white noise if no drum files
   synthetic_noise_level_db: -10.0       # dB level for synthetic noise
+
+# Export settings (v0.6)
+export:
+  pads_stereo: false                    # Output pads as stereo
+  clouds_stereo: false                  # Output clouds as stereo
+  swells_stereo: false                  # Output swells as stereo
+  hiss_stereo: false                    # Output hiss as stereo
+
+# Brightness tagging (v0.5)
+brightness_tags:
+  enabled: true                         # Enable dark/mid/bright classification
+  centroid_low_hz: 1500                 # Dark ↔ mid threshold
+  centroid_high_hz: 3500                # Mid ↔ bright threshold
 
 # Audio pre-analysis and quality filtering (v0.3)
 pre_analysis:
@@ -121,6 +139,21 @@ pre_analysis:
   grain_quality_threshold: 0.4          # Min quality score to accept grain
   skip_clipped_regions: true            # Avoid regions with clipping
   skip_transient_regions: true          # Avoid percussive regions
+
+# Curation (v0.5)
+curation:
+  auto_delete_grade_f: false            # Automatically delete "Fail" grade outputs
+
+  thresholds:
+    min_rms_db: -60.0                   # Silence threshold
+    max_rms_db: -1.0                    # Near-clipping threshold
+    max_dc_offset: 0.15                 # DC offset limit
+    max_crest_factor: 20.0              # Extreme transient limit
+
+# Musical context (v0.7)
+musicality:
+  target_key: null                      # Target key for transposition (e.g., "C", "Am")
+                                        # null = no transposition
 
 # Reproducibility
 reproducibility:
