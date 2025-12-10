@@ -1,4 +1,4 @@
-# Configuration Quick Reference (v0.7)
+# Configuration Quick Reference (v0.8)
 
 Quick lookup guide for the key configuration blocks. See `config.yaml` and `CHANGELOG.md` for full details.
 
