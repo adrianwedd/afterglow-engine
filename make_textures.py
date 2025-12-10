@@ -145,10 +145,9 @@ curation:
   auto_delete_grade_f: false            # Automatically delete "Fail" grade outputs
 
   thresholds:
-    min_rms_db: -60.0                   # Silence threshold
-    max_rms_db: -1.0                    # Near-clipping threshold
-    max_dc_offset: 0.15                 # DC offset limit
-    max_crest_factor: 20.0              # Extreme transient limit
+    min_rms_db: -60.0                   # Silence threshold (Fail if below)
+    clipping_tolerance: 0.01            # Clipping threshold (Fail if peak > 0.99)
+    max_crest_factor: 20.0              # Extreme transient limit (Fail if above)
 
 # Musical context (v0.7)
 musicality:
