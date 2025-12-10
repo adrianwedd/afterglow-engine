@@ -85,6 +85,8 @@ It hands them back to you not as “content,” but as **pigment**.
 
 ## Quick Start
 
+**New user?** Start with the [15-minute tutorial](docs/TUTORIAL.md) →
+
 The short version:
 
 ```bash
@@ -95,8 +97,10 @@ source venv/bin/activate
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Generate textures from the default folders using the default config
-python validate_config.py          # optional but recommended
+# 3. Preview what will be generated (no files created)
+python make_textures.py --all --dry-run
+
+# 4. Generate textures from the default folders
 python make_textures.py --all
 ```
 
@@ -104,19 +108,35 @@ This will:
 
 * create a default `config.yaml` (if it does not exist),
 * read audio from the default input folders,
-* write textures into `export/<Source_Name>/{pads,swells,clouds,hiss}` as 44.1 kHz WAVs.
+* write textures into `export/tr8s/<Source_Name>/{pads,swells,clouds,hiss}` as 44.1 kHz WAVs.
 
 ---
 
-## What’s New
+## What's New
 
-Latest: **v0.6 – The Architect**
+Latest: **v0.8.0 – Refined Clouds**
 
-* **Musical awareness** – detects key/BPM per source before processing.
-* **Auto-transposition** – set `target_key` and drones/clouds conform.
-* **Sharper loops** – phase-aligned seam finding to reduce clicks/wobble.
+**UX Enhancements:**
+* **Progress bars** – Visual feedback during long operations (tqdm)
+* **Dry-run mode** – Preview generation with `--dry-run` flag
+* **Config presets** – 4 optimized workflows in `examples/presets/`
+  - `config_minimal.yaml` – Learning the system
+  - `config_fast_sketch.yaml` – Quick iteration (~60% faster)
+  - `config_dense_clouds.yaml` – Rich granular textures (600 grains)
+  - `config_impossible.yaml` – Maximum extraction variety
 
-See [CHANGELOG.md](CHANGELOG.md) for full release history (v0.4–v0.6).
+**Performance & Validation:**
+* **STFT caching** – Eliminates redundant computation in analysis
+* **Performance profiling** – Benchmark suite (`tests/profile_performance.py`)
+* **DSP validation** – Regression tests for spectral analysis, crossfades
+* **O(n^0.83) scaling** – Sublinear cloud generation (faster than expected!)
+
+**Quality Improvements:**
+* **Equal-power crossfades** – Constant perceived loudness (√-based curves)
+* **Spectral centroid fix** – Per-window averaging (tonal filtering across full file)
+* **Config schema v0.8** – Bidirectional pitch ranges, stereo export control
+
+See [CHANGELOG.md](CHANGELOG.md) for full release history or [TUTORIAL.md](docs/TUTORIAL.md) to get started.
 
 ---
 
