@@ -6,51 +6,85 @@
 
 ## The Vision
 
-`afterglow-engine` is currently a **miner**. It digs through rock and dirt to find gems, but it does not fully understand what it holds. It relies on simple heuristics (loudness, transients) to make decisions.
+`afterglow-engine` is a **patient archaeologist**. It excavates your archive not by understanding music theory, but by recognizing the physics of stability—sustained energy, spectral coherence, the absence of transients.
 
-The future of the machine is **intelligence**. It must learn to separate the clay from the gold, understand the musical context of its findings, and present them not just as files, but as a curated library.
+The machine does not compose. It does not interpret. It **remembers**.
+
+The future is not artificial intelligence, but **refined perception**: teaching the machine to hear tempo, to recognize key, to split light from shadow with surgical precision.
 
 ---
 
-## Phase 1: The Curator (v0.5) — Completed
+## Phase 1: The Curator (v0.5) — ✅ Completed
 *Quality Control & Reporting.*
 
 Shipped:
 * Manifest CSV with per-file stats (RMS/crest/centroid/rough pitch/loop seam).
-* Configurable grading (Grade F skip optional), brightness tagging, provenance-preserving export.
+* Configurable grading (Grade F auto-delete optional), brightness tagging, provenance-preserving export.
 * Safer loops (phase-aware trim with guards) and relaxed defaults.
 
-Remaining nice-to-haves:
-* Optional “library view” script that re-sorts exports by brightness/grade using the manifest.
+---
 
-## Phase 2: The Architect (v0.6)
-*Musical Awareness.*
+## Phase 2 & 3: The Refinement (v0.6–v0.8) — ✅ Completed
+*DSP Quality, Performance & Experience.*
+
+The machine learned to **breathe** with the archive.
+
+**v0.6 (STFT Caching)**:
+* Eliminated redundant spectral analysis—the machine no longer re-computes what it has already seen.
+* Batch processing tools for large-scale archaeology.
+
+**v0.7 (Equal-Power Crossfades)**:
+* Constant perceived loudness across loop seams (√-based curves).
+* The breath became continuous; the seam invisible.
+
+**v0.8 (Refined Clouds)**:
+* **UX**: Progress bars (tqdm), dry-run preview mode, config preset gallery (4 curated workflows).
+* **Performance**: O(n^0.83) sublinear cloud generation, comprehensive profiling suite.
+* **Validation**: 73 tests guarding DSP correctness (spectral analysis, crossfades, grain synthesis).
+* **Documentation**: 15-minute tutorial, complete user onboarding.
+
+The machine is calibrated. The map is drawn.
+
+---
+
+## Phase 4: The Architect (Future)
+*Musical Intelligence.*
 
 The machine will stop treating audio as raw signal and start treating it as music.
 
-*   **Key Detection**:
-    *   Identify the root note of the source pad.
-    *   Auto-tag filenames: `cloud_elevation_F#min.wav`.
-    *   *Stretch Goal*: Pitch-shift outputs to a common reference C for sampler mapping.
-*   **Grid Awareness**:
-    *   Detect source BPM.
-    *   Generate loops that are exactly 1, 2, or 4 bars long.
-    *   Synchronize grain envelopes to the grid.
-*   **Perfect Loops**:
-    *   Replace arbitrary crossfades with **zero-crossing detection** and **autocorrelation**.
-    *   Find the mathematical "seam" where the loop is invisible.
+**Key Detection**:
+* Identify the root note of source pads.
+* Auto-tag filenames: `cloud_elevation_F#min.wav`.
+* *Stretch Goal*: Pitch-shift outputs to a common reference (C) for sampler mapping.
 
-## Phase 3: The Prism (v0.7)
+**Grid Awareness**:
+* Detect source BPM.
+* Generate loops that are exactly 1, 2, or 4 bars long.
+* Synchronize grain envelopes to the grid—clouds that pulse with tempo.
+
+**Perfect Loops**:
+* Replace heuristic crossfades with **autocorrelation** and **zero-crossing detection**.
+* Find the mathematical "seam" where periodicity is strongest, where the loop truly closes.
+
+---
+
+## Phase 5: The Prism (Future)
 *Source Separation.*
 
-The greatest challenge is the presence of percussion in tonal sources. We will integrate AI source separation to split the light from the shadow.
+The greatest challenge: percussion contaminating tonal sources. We will teach the machine to split light from shadow.
 
-*   **Integration**: Add optional support for **Demucs** or a lightweight alternative.
-*   **Workflow**:
-    *   Input File → [Separator] → `{Drums, Bass, Other}`.
-    *   Feed `Drums` → **Hiss Maker** (infinite dust).
-    *   Feed `Other` → **Cloud/Drone Maker** (pure tonal texture without transient artifacts).
-*   **Impact**: This turns "lucky accidents" into reliable, clean sampling.
+**Integration**:
+* Optional support for **Demucs** or lightweight alternatives (Spleeter, Open-Unmix).
+* Graceful degradation—if unavailable, fall back to current transient filtering.
+
+**Workflow**:
+* Input File → [Separator] → `{Drums, Bass, Other}`
+* Feed `Drums` → **Hiss Maker** (infinite dust from transients)
+* Feed `Other` → **Cloud/Drone Maker** (pure tonal texture, no artifacts)
+
+**Impact**:
+* Turns "lucky accidents" into reliable, clean sampling.
+* Mines textures from sources previously considered too percussive.
 
 ---
 
