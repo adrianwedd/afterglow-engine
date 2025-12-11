@@ -66,3 +66,21 @@ pytest
 ## Tone & Style
 *   **Code**: Type-hinted, modular, defensive (guards against silence/clipping).
 *   **Docs**: Precise but evocative. Use terms like "texture," "surface," "stability," and "grain."
+
+## Safety Protocol: Preservation Over Deletion
+
+**The machine does not destroy. It archives.**
+
+When removing files or directories:
+
+```bash
+# NEVER use rm -rf
+rm -rf old_experiment/          # ❌ FORBIDDEN
+
+# ALWAYS move to archive/
+mv old_experiment/ archive/     # ✅ CORRECT
+```
+
+**Rationale**: This is an archaeology tool. What seems obsolete today may hold value tomorrow. The `archive/` directory (gitignored) serves as a local museum for superseded work. Deletion is permanent; archival is reversible.
+
+**Exception**: Temporary build artifacts and generated outputs may be removed directly, as they are reproducible.

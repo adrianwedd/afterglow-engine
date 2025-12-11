@@ -202,3 +202,21 @@ export/
 ```
 
 All outputs are 44.1kHz WAV (16/24-bit), ready for TR-8S or any DAW/sampler.
+
+## Safety Protocol: Preservation Over Deletion
+
+**The machine does not destroy. It archives.**
+
+When removing files or directories from the working tree:
+
+```bash
+# NEVER use rm -rf
+rm -rf old_experiment/          # ❌ FORBIDDEN
+
+# ALWAYS move to archive/
+mv old_experiment/ archive/     # ✅ CORRECT
+```
+
+**Rationale**: This is an archaeology tool. What seems obsolete today may hold value tomorrow. The `archive/` directory (gitignored) serves as a local museum for superseded work, failed experiments, and deprecated code. Deletion is permanent; archival is reversible.
+
+**Exception**: Temporary build artifacts (`__pycache__/`, `.pytest_cache/`) and generated outputs (`export/`) may be removed directly, as they are reproducible.
