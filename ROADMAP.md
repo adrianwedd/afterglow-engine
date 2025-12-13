@@ -40,10 +40,43 @@ The machine learned to **breathe** with the archive.
 **v0.8 (Refined Clouds)**:
 * **UX**: Progress bars (tqdm), dry-run preview mode, config preset gallery (4 curated workflows).
 * **Performance**: O(n^0.83) sublinear cloud generation, comprehensive profiling suite.
-* **Validation**: 73 tests guarding DSP correctness (spectral analysis, crossfades, grain synthesis).
+* **Validation**: 74 tests guarding DSP correctness (spectral analysis, crossfades, grain synthesis).
 * **Documentation**: 15-minute tutorial, complete user onboarding.
 
-The machine is calibrated. The map is drawn.
+**v0.8.1 (Fortified Boundaries)**:
+* **Security**: Export-root containment enforced across all auxiliary scripts—the machine writes only where permitted.
+* **Validation**: Extended config schema checks for v0.8 structures (target_durations_sec, pitch_shift_range).
+* **Testing**: Security test suite (path traversal, shell injection, data validation).
+
+The machine is calibrated. The boundaries are secured. The map is drawn.
+
+---
+
+## The Immediate Horizon
+*What comes next.*
+
+Before the machine learns music theory, it must perfect its physics. The foundation is solid; now we sharpen the edges.
+
+**v0.9 - The Sentinel** (Proposed):
+*Production Hardening & Edge Case Resilience.*
+
+* **Robustness**: Guard against pathological inputs (corrupt files, extreme configs, disk full scenarios).
+* **Observability**: Enhanced logging with severity levels, machine-readable error codes.
+* **Performance**: Resolve STFT caching anomaly (investigate 0.22× speedup), optimize memory footprint.
+* **Automation**: CI/CD pipeline (GitHub Actions) for regression testing, performance benchmarks.
+
+The machine must be **reliable** before it becomes **intelligent**.
+
+**v0.10 - The Observer** (Proposed):
+*Refined Perception.*
+
+Prepare the ground for Phase 4 without yet crossing into musical intelligence:
+
+* **Spectral Refinement**: Higher-resolution onset detection, improved transient/sustained classification.
+* **Curation Evolution**: Replace fixed thresholds with percentile-based grading (relative quality within a batch).
+* **Analysis Expansion**: Export detailed spectral fingerprints (centroid over time, RMS envelope, onset strength) to manifest CSV.
+
+The machine will see **more clearly** before it learns to **understand**.
 
 ---
 
