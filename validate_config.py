@@ -151,7 +151,7 @@ def validate_config(config: dict) -> None:
     if burst_min is not None and burst_min <= 0:
         errors.append(f"hiss.burst_duration_min_ms ({burst_min}) must be positive")
 
-    # Swells and drones
+    # Swells and drones (legacy)
     swells = config.get("swells", {})
     attack_sec = swells.get("attack_sec")
     decay_sec = swells.get("decay_sec")
@@ -174,6 +174,43 @@ def validate_config(config: dict) -> None:
             errors.append("drones.target_duration_sec must be a positive number")
         elif drone_dur > 600:
             errors.append(f"drones.target_duration_sec ({drone_dur}) is unreasonably large (> 10 minutes)")
+
+    # Drone maker (v0.8 schema)
+    drone_maker = config.get("drone_maker", {})
+    target_durations = drone_maker.get("target_durations_sec")
+    if target_durations is not None:
+        if not isinstance(target_durations, list):
+            errors.append("drone_maker.target_durations_sec must be a list")
+        elif not target_durations:
+            errors.append("drone_maker.target_durations_sec cannot be empty")
+        elif not all(isinstance(d, (int, float)) and d > 0 for d in target_durations):
+            errors.append("drone_maker.target_durations_sec must contain only positive numbers")
+
+    loop_crossfade = drone_maker.get("loop_crossfade_ms")
+    if loop_crossfade is not None and (not isinstance(loop_crossfade, (int, float)) or loop_crossfade < 0):
+        errors.append("drone_maker.loop_crossfade_ms must be a non-negative number")
+
+    dm_pitch_range = drone_maker.get("pitch_shift_range", {})
+    if dm_pitch_range:
+        dm_min_shift = dm_pitch_range.get("min")
+        dm_max_shift = dm_pitch_range.get("max")
+        if dm_min_shift is not None and dm_max_shift is not None:
+            if not isinstance(dm_min_shift, (int, float)) or not isinstance(dm_max_shift, (int, float)):
+                errors.append("drone_maker.pitch_shift_range.min/max must be numbers")
+            elif dm_min_shift > dm_max_shift:
+                errors.append(f"drone_maker.pitch_shift_range.min ({dm_min_shift}) cannot exceed max ({dm_max_shift})")
+
+    # Granular maker (v0.8 schema)
+    granular_maker = config.get("granular_maker", {})
+    gm_pitch_range = granular_maker.get("pitch_shift_range", {})
+    if gm_pitch_range:
+        gm_min_shift = gm_pitch_range.get("min")
+        gm_max_shift = gm_pitch_range.get("max")
+        if gm_min_shift is not None and gm_max_shift is not None:
+            if not isinstance(gm_min_shift, (int, float)) or not isinstance(gm_max_shift, (int, float)):
+                errors.append("granular_maker.pitch_shift_range.min/max must be numbers")
+            elif gm_min_shift > gm_max_shift:
+                errors.append(f"granular_maker.pitch_shift_range.min ({gm_min_shift}) cannot exceed max ({gm_max_shift})")
 
     # Path validation
     paths = config.get("paths", {})

@@ -63,9 +63,10 @@ def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
         print(f"  [!] Cannot dust {output_path}: {e}")
         return False
 
-    # Save
-    # sf.write expects (samples, channels), which we now have
-    sf.write(output_path, mixed, sr, subtype='PCM_24')
+    # Save (using io_utils for export-root containment)
+    if not io_utils.save_audio(output_path, mixed, sr, bit_depth=24):
+        print(f"  [!] Failed to save (export-root check): {output_path}")
+        return False
     return True
 
 def main():

@@ -22,8 +22,18 @@ class TestBatchTools(unittest.TestCase):
     def setUp(self):
         self.test_dir = "tests/temp_batch_test"
         os.makedirs(self.test_dir, exist_ok=True)
-        
+
+        # Set export root to allow writes to test directory
+        self._original_export_root = os.environ.get("AFTERGLOW_EXPORT_ROOT")
+        os.environ["AFTERGLOW_EXPORT_ROOT"] = os.path.abspath(self.test_dir)
+
     def tearDown(self):
+        # Restore original export root
+        if self._original_export_root is not None:
+            os.environ["AFTERGLOW_EXPORT_ROOT"] = self._original_export_root
+        elif "AFTERGLOW_EXPORT_ROOT" in os.environ:
+            del os.environ["AFTERGLOW_EXPORT_ROOT"]
+
         if os.path.exists(self.test_dir):
             shutil.rmtree(self.test_dir)
 

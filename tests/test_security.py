@@ -47,18 +47,78 @@ class TestPathTraversalProtection(unittest.TestCase):
             self.assertFalse((outside_dir / "malicious.wav").exists(),
                            "File should not exist outside export root")
 
-    def test_placeholder(self):
-        pass
+    def test_absolute_path_outside_export_blocked(self):
+        """Verify that absolute paths outside export root are blocked"""
+        with tempfile.TemporaryDirectory() as tmp:
+            export_dir = Path(tmp) / "export"
+            export_dir.mkdir()
+            outside_dir = Path(tmp) / "outside"
+            outside_dir.mkdir()
+
+            os.environ["AFTERGLOW_EXPORT_ROOT"] = str(export_dir)
+
+            audio = np.random.randn(1000) * 0.1
+            evil_path = str(outside_dir / "escape.wav")
+
+            result = io_utils.save_audio(evil_path, audio, sr=44100, bit_depth=24)
+
+            self.assertFalse(result, "Absolute path outside export should be blocked")
+            self.assertFalse((outside_dir / "escape.wav").exists(),
+                           "File should not exist outside export root")
 
 class TestShellInjectionProtection(unittest.TestCase):
     """Verify security protections against shell injection"""
-    def test_placeholder(self):
-        pass
+
+    def test_no_shell_execution_in_source(self):
+        """Verify source code does not use os.system() or shell=True"""
+        import subprocess
+        result = subprocess.run(
+            ['grep', '-rn', r'os\.system\|shell=True', '--include=*.py',
+             'musiclib/', 'make_textures.py', 'mine_drums.py', 'mine_silences.py',
+             'dust_pads.py', 'curate_best.py', 'process_batch.py'],
+            capture_output=True,
+            text=True
+        )
+        # Filter out __pycache__ and .pyc
+        lines = [line for line in result.stdout.split('\n')
+                 if line and '__pycache__' not in line and '.pyc' not in line]
+
+        self.assertEqual(len(lines), 0,
+                        f"Found potential shell execution: {lines}")
 
 class TestDataValidation(unittest.TestCase):
     """Verify security protections against invalid data"""
-    def test_placeholder(self):
-        pass
+
+    def test_save_audio_rejects_invalid_bit_depth(self):
+        """Verify save_audio rejects invalid bit depths"""
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["AFTERGLOW_EXPORT_ROOT"] = tmp
+            audio = np.random.randn(1000) * 0.1
+            path = str(Path(tmp) / "test.wav")
+
+            # Try invalid bit depth
+            result = io_utils.save_audio(path, audio, sr=44100, bit_depth=32)
+
+            self.assertFalse(result, "Should reject bit_depth=32")
+            self.assertFalse(Path(path).exists(), "File should not be created")
+
+    def test_save_audio_accepts_valid_bit_depths(self):
+        """Verify save_audio accepts 16 and 24 bit depths"""
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["AFTERGLOW_EXPORT_ROOT"] = tmp
+            audio = np.random.randn(1000) * 0.1
+
+            # Test 16-bit
+            path_16 = str(Path(tmp) / "test16.wav")
+            result_16 = io_utils.save_audio(path_16, audio, sr=44100, bit_depth=16)
+            self.assertTrue(result_16, "Should accept bit_depth=16")
+            self.assertTrue(Path(path_16).exists())
+
+            # Test 24-bit
+            path_24 = str(Path(tmp) / "test24.wav")
+            result_24 = io_utils.save_audio(path_24, audio, sr=44100, bit_depth=24)
+            self.assertTrue(result_24, "Should accept bit_depth=24")
+            self.assertTrue(Path(path_24).exists())
 
 if __name__ == '__main__':
     unittest.main()

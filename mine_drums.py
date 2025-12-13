@@ -202,11 +202,13 @@ def main():
     for i, drum_audio in enumerate(slices):
         filename = f"{stem}_drum_{i+1:03d}.wav"
         out_path = os.path.join(output_dir, filename)
-        
-        # Compute minimal metadata for grading? 
+
+        # Compute minimal metadata for grading?
         # For now just save everything we found
-        
-        sf.write(out_path, drum_audio, sr, subtype='PCM_24')
+
+        if not io_utils.save_audio(out_path, drum_audio, sr, bit_depth=24):
+            print(f"    [!] Failed to save: {out_path}")
+            continue
         saved_count += 1
         if saved_count % 50 == 0:
             print(f"    Saved {saved_count}...")

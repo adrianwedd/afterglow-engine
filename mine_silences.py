@@ -96,7 +96,10 @@ def mine_silences(
 
         filename = f"{stem}_silence_{found_count+1:03d}.wav"
         out_path = os.path.join(output_dir, filename)
-        sf.write(out_path, chunk_norm, sr, subtype='PCM_24')
+
+        if not io_utils.save_audio(out_path, chunk_norm, sr, bit_depth=24):
+            print(f"    [!] Failed to save: {out_path}")
+            continue
 
         found_count += 1
         if found_count >= max_extracted:
