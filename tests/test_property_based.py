@@ -197,9 +197,9 @@ class TestRMSEnergyProperties(unittest.TestCase):
     @settings(max_examples=30, deadline=1000)
     def test_rms_energy_db_range(self, audio):
         """RMS energy in dB should be in reasonable range."""
-        # Skip near-silent audio
-        peak = np.max(np.abs(audio))
-        assume(peak > 1e-6)
+        # Skip near-silent audio (RMS close to zero can cause log errors)
+        rms_val = dsp_utils.rms_energy(audio)
+        assume(rms_val > 1e-8)
 
         rms_db = dsp_utils.rms_energy_db(audio)
 
