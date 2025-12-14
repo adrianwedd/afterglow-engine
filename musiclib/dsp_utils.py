@@ -126,6 +126,9 @@ def estimate_pitch_hz(audio: np.ndarray, sr: int, fmin: float = 30.0, fmax: floa
     """Rough pitch estimate via dominant FFT bin."""
     if len(audio) == 0:
         return None
+    # If stereo/stacked, collapse to mono for robust FFT sizing
+    if audio.ndim > 1:
+        audio = np.mean(audio, axis=0)
     audio = audio - np.mean(audio)
     if np.max(np.abs(audio)) < 1e-4:
         return None

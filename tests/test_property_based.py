@@ -199,7 +199,8 @@ class TestRMSEnergyProperties(unittest.TestCase):
         """RMS energy in dB should be in reasonable range."""
         # Skip near-silent audio (RMS close to zero can cause log errors)
         rms_val = dsp_utils.rms_energy(audio)
-        assume(rms_val > 1e-8)
+        # 10^(-120/20) = 1e-6. We need slightly more to be safely above -120dB
+        assume(rms_val > 1.1e-6)
 
         rms_db = dsp_utils.rms_energy_db(audio)
 
