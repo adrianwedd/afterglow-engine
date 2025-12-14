@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.append(os.getcwd())
 
 import musiclib.io_utils as io_utils
+from musiclib.exceptions import PermissionError as AfterglowPermissionError
 
 class TestPathTraversalProtection(unittest.TestCase):
     """Verify security protections against path traversal"""
@@ -40,10 +41,11 @@ class TestPathTraversalProtection(unittest.TestCase):
             audio = np.random.randn(1000) * 0.1
             evil_path = str(evil_link / "malicious.wav")
 
-            result = io_utils.save_audio(evil_path, audio, sr=44100, bit_depth=24)
+            # Should raise PermissionError
+            with self.assertRaises(AfterglowPermissionError) as cm:
+                io_utils.save_audio(evil_path, audio, sr=44100, bit_depth=24)
 
-            # Should be blocked
-            self.assertFalse(result, "Symlink escape should be blocked")
+            # Verify file was not created
             self.assertFalse((outside_dir / "malicious.wav").exists(),
                            "File should not exist outside export root")
 
@@ -60,9 +62,11 @@ class TestPathTraversalProtection(unittest.TestCase):
             audio = np.random.randn(1000) * 0.1
             evil_path = str(outside_dir / "escape.wav")
 
-            result = io_utils.save_audio(evil_path, audio, sr=44100, bit_depth=24)
+            # Should raise PermissionError
+            with self.assertRaises(AfterglowPermissionError):
+                io_utils.save_audio(evil_path, audio, sr=44100, bit_depth=24)
 
-            self.assertFalse(result, "Absolute path outside export should be blocked")
+            # Verify file was not created
             self.assertFalse((outside_dir / "escape.wav").exists(),
                            "File should not exist outside export root")
 
@@ -96,10 +100,14 @@ class TestDataValidation(unittest.TestCase):
             audio = np.random.randn(1000) * 0.1
             path = str(Path(tmp) / "test.wav")
 
-            # Try invalid bit depth
-            result = io_utils.save_audio(path, audio, sr=44100, bit_depth=32)
+            # Try invalid bit depth - should raise ValueError
+            with self.assertRaises(ValueError) as cm:
+                io_utils.save_audio(path, audio, sr=44100, bit_depth=32)
 
-            self.assertFalse(result, "Should reject bit_depth=32")
+            # Verify error message mentions invalid bit depth
+            self.assertIn("bit_depth", str(cm.exception).lower())
+
+            # Verify file was not created
             self.assertFalse(Path(path).exists(), "File should not be created")
 
     def test_save_audio_accepts_valid_bit_depths(self):
