@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.append(os.getcwd())
 
 import musiclib.dsp_utils as dsp_utils
+from musiclib.exceptions import InvalidParameter, SilentArtifact
 import validate_config
 import make_textures
 
@@ -17,16 +18,16 @@ class TestC2SilentAudioNormalization(unittest.TestCase):
     """C2: Verify silent audio normalization fix"""
     
     def test_absolute_silence_raises_error(self):
-        """Should raise ValueError for all-zero array"""
+        """Should raise SilentArtifact for all-zero array"""
         audio = np.zeros(44100)
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(SilentArtifact) as cm:
             dsp_utils.normalize_audio(audio)
         self.assertIn("silent audio", str(cm.exception))
 
     def test_near_silence_raises_error(self):
-        """Should raise ValueError for audio below 1e-8 peak"""
+        """Should raise SilentArtifact for audio below 1e-8 peak"""
         audio = np.random.uniform(-1e-9, 1e-9, 44100)
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(SilentArtifact) as cm:
             dsp_utils.normalize_audio(audio)
         self.assertIn("silent audio", str(cm.exception))
 
@@ -337,13 +338,13 @@ class TestExpandedConfigValidation(unittest.TestCase):
 
     def test_invalid_sample_rate(self):
         config = {"global": {"sample_rate": 441}} # Too low
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(InvalidParameter) as cm:
             validate_config.validate_config(config)
         self.assertIn("outside reasonable range", str(cm.exception))
 
     def test_invalid_target_peak(self):
         config = {"global": {"sample_rate": 44100, "target_peak_dbfs": 1.0}} # Positive
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(InvalidParameter) as cm:
             validate_config.validate_config(config)
         self.assertIn("must be negative", str(cm.exception))
 
@@ -354,7 +355,7 @@ class TestExpandedConfigValidation(unittest.TestCase):
             "global": {"sample_rate": 44100, "output_bit_depth": 24},
             "clouds": {"filter_length_samples": 88200}
         }
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(InvalidParameter) as cm:
             validate_config.validate_config(config)
         self.assertIn("exceeds sample_rate", str(cm.exception))
 
@@ -364,7 +365,7 @@ class TestExpandedConfigValidation(unittest.TestCase):
         # Should not raise - this is now just a warning
         try:
             validate_config.validate_config(config)
-        except ValueError:
+        except InvalidParameter:
             self.fail("filter_length < 64 should be a warning, not an error")
 
 if __name__ == '__main__':

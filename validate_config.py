@@ -4,6 +4,10 @@ Run automatically by make_textures.py after loading config.
 """
 
 import sys
+from musiclib.logger import get_logger
+from musiclib.exceptions import InvalidParameter
+
+logger = get_logger(__name__)
 
 
 def validate_config(config: dict) -> None:
@@ -25,7 +29,7 @@ def validate_config(config: dict) -> None:
             errors.append(f"global.target_peak_dbfs ({target_peak}) must be negative (0 dBFS is digital maximum)")
         elif target_peak < -60:
             # Downgraded to warning - some users may want very quiet output
-            print(f"[config] Warning: target_peak_dbfs ({target_peak}) is unusually quiet (< -60 dBFS)", file=sys.stderr)
+            logger.warning(f"target_peak_dbfs ({target_peak}) is unusually quiet (< -60 dBFS)")
 
     # Clouds: grain lengths
     clouds = config.get("clouds", {})
@@ -55,7 +59,7 @@ def validate_config(config: dict) -> None:
             errors.append(f"clouds.filter_length_samples ({filter_length}) exceeds sample_rate ({sr})")
         elif filter_length < 64:
             # Downgraded to warning - some advanced users may want smaller windows
-            print(f"[config] Warning: filter_length_samples ({filter_length}) is small (< 64), may affect filtering quality", file=sys.stderr)
+            logger.warning(f"filter_length_samples ({filter_length}) is small (< 64), may affect filtering quality")
 
     # Pad miner: RMS bounds
     pad_miner = config.get("pad_miner", {})
@@ -223,13 +227,14 @@ def validate_config(config: dict) -> None:
 
     if errors:
         error_msg = "Invalid configuration:\n" + "\n".join([f"- {e}" for e in errors])
-        print(error_msg, file=sys.stderr)
-        raise ValueError(error_msg)
+        logger.error(error_msg)
+        raise InvalidParameter(error_msg, context={"error_count": len(errors)})
 
 
 if __name__ == "__main__":
     import yaml
     import os
+    from musiclib.logger import log_success
 
     config_path = "config.yaml"
     if os.path.exists(config_path):
@@ -237,10 +242,10 @@ if __name__ == "__main__":
             try:
                 config = yaml.safe_load(f)
                 validate_config(config)
-                print("[*] Configuration is valid.")
+                log_success(logger, "Configuration is valid.")
             except Exception as e:
-                print(f"[!] Config validation failed: {e}", file=sys.stderr)
+                logger.error(f"Config validation failed: {e}")
                 sys.exit(1)
     else:
-        print(f"[!] {config_path} not found. Run make_textures.py first to generate it.", file=sys.stderr)
+        logger.error(f"{config_path} not found. Run make_textures.py first to generate it.")
         sys.exit(1)

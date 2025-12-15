@@ -7,12 +7,17 @@ from scipy import signal
 import math
 import sys
 
+from musiclib.logger import get_logger
+from musiclib.exceptions import SilentArtifact, AudioError
+
+logger = get_logger(__name__)
+
 try:
     import librosa
 except ImportError:
-    print("[WARNING] librosa not installed", file=sys.stderr)
-    print("  → Pitch shifting, BPM detection, key detection will be disabled", file=sys.stderr)
-    print("  → Install with: pip install librosa", file=sys.stderr)
+    logger.warning("librosa not installed")
+    logger.warning("  → Pitch shifting, BPM detection, key detection will be disabled")
+    logger.warning("  → Install with: pip install librosa")
     librosa = None
 
 
@@ -47,8 +52,9 @@ def set_random_seed(seed: int = None):
         try:
             import random
             random.seed(seed)
-        except Exception:
+        except ImportError:
             # If stdlib random is unavailable for some reason, skip without failing
+            logger.debug("stdlib random module not available, skipping random.seed()")
             pass
 
 
@@ -64,13 +70,15 @@ def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.nda
         Normalized audio array
 
     Raises:
-        ValueError: If audio is silent (peak < 1e-8)
+        SilentArtifact: If audio is silent (peak < 1e-8)
     """
     peak = np.max(np.abs(audio))
     if peak < 1e-8:
-        raise ValueError(
+        rms_db = rms_energy_db(audio)
+        raise SilentArtifact(
             f"Cannot normalize silent audio (peak={peak:.2e}). "
-            f"Audio is likely below noise floor or all zeros."
+            f"Audio is likely below noise floor or all zeros.",
+            context={"peak": peak, "rms_db": rms_db}
         )
 
     target_linear = 10 ** (target_peak_dbfs / 20.0)
@@ -112,8 +120,11 @@ def _spectral_centroid(audio: np.ndarray, sr: int) -> float:
     try:
         if librosa is not None:
             return float(np.mean(librosa.feature.spectral_centroid(y=audio, sr=sr)))
-    except Exception:
-        pass
+    except Exception as e:
+        # Fall back to FFT if librosa fails (e.g., due to invalid audio)
+        logger.debug(f"librosa spectral_centroid failed, using FFT fallback: {e}")
+
+    # FFT-based fallback
     fft = np.fft.rfft(audio)
     freqs = np.fft.rfftfreq(len(audio), 1 / sr)
     mag = np.abs(fft)

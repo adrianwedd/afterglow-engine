@@ -1,0 +1,105 @@
+# Dytiq-focused config: brighter admission, longer pads, smoother loops
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  pad_sources_dir: pad_sources
+  drums_dir: drums
+  export_dir: export/tr8s_dytiq_custom
+
+pad_miner:
+  # Allow brighter/more active texture while keeping sustained bias
+  target_durations_sec: [2.0, 3.5, 5.5, 6.5]
+  min_rms_db: -42.0
+  max_rms_db: -9.0
+  max_onset_rate_per_second: 3.5
+  spectral_flatness_threshold: 0.6
+  max_candidates_per_file: 8
+  loop_crossfade_ms: 230
+  window_hop_sec: 0.45
+
+drones:
+  pad_loop_duration_sec: 2.0
+  pad_variants: [warm, airy, dark]
+  warm_lowpass_hz: 3500
+  airy_highpass_hz: 5500
+  dark_high_cut_hz: 1200
+  swell_duration_sec: 10.0
+  fade_in_sec: 1.0
+  fade_out_sec: 2.5
+  pitch_shift_semitones: [0, 5, 7, 12, -5]
+  time_stretch_factors: [1.0, 1.2, 1.5, 2.0]
+  enable_reversal: true
+
+pre_analysis:
+  enabled: true
+  analysis_window_sec: 1.0
+  analysis_hop_sec: 0.5
+  max_onset_rate_hz: 3.5
+  min_rms_db: -42.0
+  max_rms_db: -9.0
+  max_dc_offset: 0.05
+  max_crest_factor: 10.0
+  grain_quality_threshold: 0.6
+  min_stable_windows: 2
+  skip_clipped_regions: true
+  skip_transient_regions: true
+
+clouds:
+  grain_length_min_ms: 40
+  grain_length_max_ms: 120
+  grains_per_cloud: 300
+  cloud_duration_sec: 8.0
+  pitch_shift_range:
+    min: -5
+    max: 5
+  overlap_ratio: 0.7
+  lowpass_hz: 7000
+  clouds_per_source: 4
+  target_peak_dbfs: -3.0
+
+hiss:
+  loop_duration_sec: 2.0
+  highpass_hz: 5500
+  bandpass_low_hz: 4000
+  bandpass_high_hz: 15000
+  use_bandpass: true
+  tremolo_rate_hz: 2.5
+  tremolo_depth: 0.5
+  hiss_loops_per_source: 3
+  flicker_min_ms: 30
+  flicker_max_ms: 500
+  flicker_count: 6
+  use_synthetic_noise: true
+  synthetic_noise_level_db: -12.0
+
+export:
+  pads_stereo: true
+  swells_stereo: false
+  clouds_stereo: true
+  hiss_stereo: true
+
+brightness_tags:
+  enabled: true
+  centroid_low_hz: 1200
+  centroid_high_hz: 4000
+
+curation:
+  auto_delete_grade_f: false
+  thresholds:
+    min_rms_db: -60.0
+    clipping_tolerance: 0.01
+    max_crest_factor: 25.0
+
+musicality:
+  reference_bpm: "detect"
+  snap_to_grid: false
+  bar_lengths: [1, 2, 4]
+  target_key: null
+
+reproducibility:
+  random_seed: null
