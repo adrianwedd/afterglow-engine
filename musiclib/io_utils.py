@@ -115,12 +115,13 @@ def save_audio(
         subtype: Soundfile subtype string
 
     Returns:
-        True if successful, False otherwise
+        True on successful write
 
     Raises:
         ValueError: If audio contains invalid data or bit_depth is invalid
         AfterglowPermissionError: If path is outside export root
         DiskFullError: If insufficient disk space
+        FilesystemError: For other filesystem errors
     """
     # Validate audio data
     if audio is None or audio.size == 0:
