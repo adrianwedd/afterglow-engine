@@ -8,6 +8,10 @@ import numpy as np
 import librosa
 from tqdm import tqdm
 from . import io_utils, dsp_utils, audio_analyzer
+from .logger import get_logger, log_success
+from .exceptions import SilentArtifact, ArchaeologyFailed
+
+logger = get_logger(__name__)
 
 
 def extract_sustained_segments(
@@ -78,7 +82,7 @@ def extract_sustained_segments(
             if 'min_rms_db' in pre_analysis_config or 'max_rms_db' in pre_analysis_config or 'max_onset_rate_hz' in pre_analysis_config:
                 use_pre_analysis_thresholds = True
 
-            dsp_utils.vprint(f"    [pre-analysis] Analyzing for pad mining: onset_rate={pre_max_onset_rate}, RMS=[{pre_min_rms_db}, {pre_max_rms_db}] dB, DC={pre_max_dc_offset}, crest={pre_max_crest}")
+            logger.debug(f"    [pre-analysis] Analyzing for pad mining: onset_rate={pre_max_onset_rate}, RMS=[{pre_min_rms_db}, {pre_max_rms_db}] dB, DC={pre_max_dc_offset}, crest={pre_max_crest}")
             analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
             stable_mask = analyzer.get_stable_regions(
                 max_onset_rate=pre_max_onset_rate,
@@ -88,9 +92,9 @@ def extract_sustained_segments(
                 max_crest=pre_max_crest,
             )
         else:
-            dsp_utils.vprint(f"    [pre-analysis] Disabled: using standard sustained segment detection")
+            logger.debug(f"    [pre-analysis] Disabled: using standard sustained segment detection")
     else:
-        dsp_utils.vprint(f"    [pre-analysis] No config provided; using standard sustained segment detection")
+        logger.debug(f"    [pre-analysis] No config provided; using standard sustained segment detection")
 
     # Compute STFT once and reuse for both onset and spectral features (Phase 3 optimization)
     try:
@@ -102,8 +106,9 @@ def extract_sustained_segments(
         )
         # Compute spectral flatness from cached STFT
         flatness_frames = librosa.feature.spectral_flatness(S=S)[0]
-    except Exception:
-        # Fallback if STFT fails
+    except Exception as e:
+        # Fallback if STFT fails (e.g., very short audio)
+        logger.debug(f"STFT computation failed, using fallback: {e}")
         onset_strength = librosa.onset.onset_strength(y=audio, sr=sr)
         onset_frames = librosa.onset.onset_detect(
             onset_envelope=onset_strength, sr=sr, units='samples'
@@ -214,7 +219,7 @@ def mine_pads_from_file(
     audio, _ = io_utils.load_audio(filepath, sr=sr, mono=True)
 
     if audio is None or len(audio) < sr // 10 or dsp_utils.rms_energy(audio) < 1e-6:
-        print(f"  [*] Skipping {filepath} (too short or silent)")
+        logger.info(f"  [*] Skipping {filepath} (too short or silent)")
         return []
 
     pm_config = config['pad_miner']
@@ -274,8 +279,8 @@ def mine_pads_from_file(
             peak_dbfs = config['global']['target_peak_dbfs']
             try:
                 pad_audio = dsp_utils.normalize_audio(pad_audio, peak_dbfs)
-            except ValueError as e:
-                print(f"    → Skipping pad from {Path(filepath).stem}: {e}")
+            except SilentArtifact as e:
+                logger.warning(f"    → Skipping pad from {Path(filepath).stem}: {e}")
                 continue
 
             # Convert to stereo if requested
@@ -290,7 +295,7 @@ def mine_pads_from_file(
             pads_with_tags.append((pad_audio, brightness_tag))
 
     if not pads_with_tags:
-        print(f"  [*] No sustained segments found in {filepath}")
+        logger.info(f"  [*] No sustained segments found in {filepath}")
 
     return pads_with_tags
 
@@ -309,20 +314,20 @@ def mine_all_pads(config: dict) -> dict:
     files = io_utils.discover_audio_files(source_dir)
 
     if not files:
-        print(f"[!] No audio files found in {source_dir}")
+        logger.warning(f"[!] No audio files found in {source_dir}")
         return {}
 
-    print(f"\n[PAD MINER] Processing {len(files)} file(s)...")
+    logger.info(f"\n[PAD MINER] Processing {len(files)} file(s)...")
 
     results = {}
     for filepath in tqdm(files, desc="Mining pads", unit="file"):
         stem = io_utils.get_filename_stem(filepath)
-        tqdm.write(f"  Processing: {stem}")
+        logger.info(f"  Processing: {stem}")
 
         pads = mine_pads_from_file(filepath, config)
         if pads:
             results[stem] = pads
-            tqdm.write(f"    → Found {len(pads)} pad candidate(s)")
+            logger.info(f"    → Found {len(pads)} pad candidate(s)")
 
     return results
 
@@ -376,13 +381,13 @@ def save_mined_pads(
                 metadata["saved"] = False
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✕ {filename} (grade F, skipped)")
+                logger.info(f"    ✕ {filename} (grade F, skipped)")
                 continue
 
             if io_utils.save_audio(filepath, pad_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✓ {filename}")
+                logger.info(f"    ✓ {filename}")
 
     return total_saved
