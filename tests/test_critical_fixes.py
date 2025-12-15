@@ -280,8 +280,7 @@ class TestH8OnsetDetectionFeedback(unittest.TestCase):
     def test_verbose_feedback(self):
         """AudioAnalyzer should provide rejection feedback when verbose=True"""
         from musiclib.audio_analyzer import AudioAnalyzer
-        import io
-        import sys
+        import logging
 
         # Create audio with high onset density
         audio = np.zeros(44100)
@@ -292,9 +291,24 @@ class TestH8OnsetDetectionFeedback(unittest.TestCase):
 
         analyzer = AudioAnalyzer(audio, sr=44100, window_size_sec=1.0, hop_sec=0.5)
 
-        # Capture stdout to verify verbose output
-        old_stdout = sys.stdout
-        sys.stdout = captured = io.StringIO()
+        # Capture logging output to verify verbose output
+        # Set up a string handler to capture debug logs
+        logger = logging.getLogger('musiclib.audio_analyzer')
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.DEBUG)
+
+        # Store original level and handlers
+        original_level = logger.level
+        original_handlers = logger.handlers[:]
+
+        # Configure logger for capture
+        logger.setLevel(logging.DEBUG)
+        logger.handlers = [handler]
+
+        # Capture output
+        import io
+        captured = io.StringIO()
+        handler.stream = captured
 
         try:
             # Call with verbose=True and strict onset limit
@@ -306,13 +320,15 @@ class TestH8OnsetDetectionFeedback(unittest.TestCase):
             self.assertIn("rejected", output)
 
         finally:
-            sys.stdout = old_stdout
+            # Restore original logger configuration
+            logger.setLevel(original_level)
+            logger.handlers = original_handlers
 
     def test_verbose_off_by_default(self):
         """Verbose should be off by default (no output)"""
         from musiclib.audio_analyzer import AudioAnalyzer
+        import logging
         import io
-        import sys
 
         audio = np.zeros(44100)
         for i in range(0, len(audio), 4410):
@@ -321,17 +337,34 @@ class TestH8OnsetDetectionFeedback(unittest.TestCase):
 
         analyzer = AudioAnalyzer(audio, sr=44100, window_size_sec=1.0)
 
-        old_stdout = sys.stdout
-        sys.stdout = captured = io.StringIO()
+        # Capture logging output
+        logger = logging.getLogger('musiclib.audio_analyzer')
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.DEBUG)
+
+        # Store original level and handlers
+        original_level = logger.level
+        original_handlers = logger.handlers[:]
+
+        # Configure logger for capture
+        logger.setLevel(logging.DEBUG)
+        logger.handlers = [handler]
+
+        # Capture output
+        captured = io.StringIO()
+        handler.stream = captured
 
         try:
+            # Call WITHOUT verbose flag (default is False)
             mask = analyzer.get_stable_regions(max_onset_rate=1.0)
             output = captured.getvalue()
-            # Should NOT see rejection messages
+            # Should NOT see rejection messages (verbose=False by default)
             self.assertNotIn("[analyzer]", output)
 
         finally:
-            sys.stdout = old_stdout
+            # Restore original logger configuration
+            logger.setLevel(original_level)
+            logger.handlers = original_handlers
 
 class TestExpandedConfigValidation(unittest.TestCase):
     """Test validation of critical parameters"""

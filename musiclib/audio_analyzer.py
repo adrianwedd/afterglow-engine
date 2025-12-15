@@ -11,6 +11,10 @@ from typing import Tuple, Dict
 import numpy as np
 import librosa
 from . import dsp_utils
+from .logger import get_logger
+from .exceptions import AudioError
+
+logger = get_logger(__name__)
 
 
 class AudioAnalyzer:
@@ -108,7 +112,9 @@ class AudioAnalyzer:
             )
             self._onset_frames = onset_frames
             return onset_frames
-        except Exception:
+        except Exception as e:
+            # Fallback for very short audio or other edge cases
+            logger.debug(f"Onset detection failed, using empty array fallback: {e}")
             self._onset_frames = np.array([])
             return np.array([])
 
@@ -150,7 +156,9 @@ class AudioAnalyzer:
 
             self._spectral_centroid = np.array(centroid_values) if centroid_values else np.array([2000.0])
             return self._spectral_centroid
-        except Exception:
+        except Exception as e:
+            # Fallback for very short audio or other edge cases
+            logger.debug(f"Spectral centroid computation failed, using neutral fallback: {e}")
             self._spectral_centroid = np.array([2000.0] * len(self._compute_rms_curve()))
             return self._spectral_centroid
 
@@ -265,7 +273,7 @@ class AudioAnalyzer:
         if verbose:
             for i, passes in enumerate(rms_mask):
                 if not passes and mask[i]:
-                    print(f"  [analyzer] Window {i} rejected: RMS {rms[i]:.1f} dB outside [{rms_low_db}, {rms_high_db}]")
+                    logger.debug(f"  [analyzer] Window {i} rejected: RMS {rms[i]:.1f} dB outside [{rms_low_db}, {rms_high_db}]")
         mask &= rms_mask
 
         # Filter by DC offset
@@ -273,7 +281,7 @@ class AudioAnalyzer:
         if verbose:
             for i, passes in enumerate(dc_mask):
                 if not passes and mask[i]:
-                    print(f"  [analyzer] Window {i} rejected: DC offset {dc[i]:.4f} >= {max_dc_offset}")
+                    logger.debug(f"  [analyzer] Window {i} rejected: DC offset {dc[i]:.4f} >= {max_dc_offset}")
         mask &= dc_mask
 
         # Filter by crest factor
@@ -281,7 +289,7 @@ class AudioAnalyzer:
         if verbose:
             for i, passes in enumerate(crest_mask):
                 if not passes and mask[i]:
-                    print(f"  [analyzer] Window {i} rejected: Crest factor {crest[i]:.2f} >= {max_crest}")
+                    logger.debug(f"  [analyzer] Window {i} rejected: Crest factor {crest[i]:.2f} >= {max_crest}")
         mask &= crest_mask
 
         # Filter by spectral centroid (optional tonal gate)
@@ -292,14 +300,14 @@ class AudioAnalyzer:
                 if verbose:
                     for i, passes in enumerate(centroid_low_mask):
                         if not passes and mask[i]:
-                            print(f"  [analyzer] Window {i} rejected: Centroid {centroid[i]:.1f} Hz < {centroid_low_hz}")
+                            logger.debug(f"  [analyzer] Window {i} rejected: Centroid {centroid[i]:.1f} Hz < {centroid_low_hz}")
                 mask &= centroid_low_mask
             if centroid_high_hz is not None:
                 centroid_high_mask = centroid <= centroid_high_hz
                 if verbose:
                     for i, passes in enumerate(centroid_high_mask):
                         if not passes and mask[i]:
-                            print(f"  [analyzer] Window {i} rejected: Centroid {centroid[i]:.1f} Hz > {centroid_high_hz}")
+                            logger.debug(f"  [analyzer] Window {i} rejected: Centroid {centroid[i]:.1f} Hz > {centroid_high_hz}")
                 mask &= centroid_high_mask
 
         # Filter by onset density
@@ -311,7 +319,7 @@ class AudioAnalyzer:
             onset_rate = onsets_in_window / (self.window_size_samples / self.sr)
             if onset_rate > max_onset_rate:
                 if verbose and mask[i]:
-                    print(f"  [analyzer] Window {i} rejected: Onset rate {onset_rate:.2f} > {max_onset_rate}")
+                    logger.debug(f"  [analyzer] Window {i} rejected: Onset rate {onset_rate:.2f} > {max_onset_rate}")
                 mask[i] = False
 
         self._stability_mask[cache_key] = mask
