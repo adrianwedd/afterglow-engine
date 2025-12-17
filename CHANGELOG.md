@@ -4,6 +4,66 @@
 
 ---
 
+## v0.9 (The Sentinel)
+*The machine becomes production-ready.*
+
+The prototype awakens into watchfulness. Where once failures crashed in silence, they now speak with clarity. Where errors hid in shadows, exceptions now carry context. The machine remembers its actions, logs its thoughts, tests itself relentlessly.
+
+No longer merely functional—it is now *hardened*. The sentinel guards against corruption, watches for performance regression, validates at every boundary. It knows when disk runs dry, when audio contains infinity, when paths escape their bounds.
+
+The archaeology continues, but now with safeguards.
+
+**Technical Details:**
+
+*   **Observability & Error Handling:**
+    *   Structured logging system (`musiclib.logger`) with module-level tagging and configurable verbosity via `AFTERGLOW_LOG_LEVEL`.
+    *   Custom exception hierarchy: `SilentArtifact`, `ClippedArtifact`, `FilesystemError`, `DiskFullError`, `AfterglowPermissionError`.
+    *   All custom exceptions carry rich debugging context (peak values, RMS, paths, available disk space).
+    *   Graceful degradation: `load_audio()` returns `(None, None)` instead of raising exceptions, enabling batch processing to continue.
+    *   Visual style preserved: log messages use `[*]`, `[!]`, `[✓]`, `[✗]` prefixes for CLI feel.
+
+*   **CI/CD & Quality Gates:**
+    *   GitHub Actions workflows for automated testing across Python 3.9, 3.10, 3.11.
+    *   Performance regression detection: fails builds if >20% slower than baseline.
+    *   Code quality checks: Flake8, Black, MyPy integration (continue-on-error for gradual adoption).
+    *   Automated release workflow on version tags.
+    *   Coverage reporting to Codecov (Python 3.11).
+
+*   **Robustness:**
+    *   26 new edge case tests: corrupt audio (zero-byte, truncated WAV, non-audio files), extreme configurations (inverted RMS ranges, zero sample rates), filesystem issues (disk full, read-only directories, path traversal).
+    *   Input validation across all DSP functions: NaN/Inf detection, parameter range checking, empty array guards.
+    *   Path traversal security: writes outside export root blocked unless `AFTERGLOW_UNSAFE_IO=1` (testing only).
+    *   Test suite expanded: 159 passed, 4 skipped (up from 73 in v0.8).
+
+*   **Performance:**
+    *   Corrected STFT caching benchmark methodology (previous 0.22× result was measuring all feature caching, not just STFT).
+    *   Verified >100,000× speedup on subsequent STFT calls (essentially free after first computation).
+    *   Single-pass overhead reduction: ~66% (1 STFT call vs 3 calls for multiple features).
+    *   Documented grain quality filtering as intentional bottleneck (60-70% of time, necessary for quality).
+
+*   **Documentation:**
+    *   `docs/LOGGING.md` - Structured logging guide (260 lines): log levels, environment variables, migration from print().
+    *   `docs/ERROR_HANDLING.md` - Exception hierarchy and patterns (326 lines): custom exceptions, error recovery strategies, exit codes.
+    *   `docs/CI_CD.md` - GitHub Actions workflow documentation (291 lines): workflow descriptions, baseline management, local testing.
+    *   `docs/MIGRATION_V0.9.md` - Migration guide from v0.8 (376 lines): breaking changes, recommended upgrades, rollback instructions.
+    *   Updated README.md with v0.9 features, CI badges, and usage flags (`--verbose`, `--strict`).
+
+*   **Breaking Changes (Minimal):**
+    *   `io_utils.load_audio()` returns `(None, None)` on error instead of raising exceptions (requires None checks).
+    *   Exception types changed from generic `ValueError`/`Exception` to specific custom types (`SilentArtifact`, `FilesystemError`).
+    *   `dsp_utils.normalize_audio()` now clips to [-1, 1] range to prevent overflow.
+
+*   **New Environment Variables:**
+    *   `AFTERGLOW_LOG_LEVEL` - Control log verbosity (DEBUG/INFO/WARNING/ERROR/CRITICAL).
+    *   `AFTERGLOW_EXPORT_ROOT` - Set export directory (default: `export`).
+    *   `AFTERGLOW_UNSAFE_IO` - Allow writes outside export root (testing only, default: disabled).
+
+*   **New CLI Flags:**
+    *   `--verbose` - Enable debug logging (equivalent to `AFTERGLOW_LOG_LEVEL=DEBUG`).
+    *   `--strict` - Fail on first error (useful for CI/CD validation).
+
+---
+
 ## v0.8 (Refined Clouds)
 *The machine polishes its textures.*
 
