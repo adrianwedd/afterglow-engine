@@ -13,6 +13,8 @@ env/
 # --- Audio Sources (Large Binaries) ---
 *.flac
 *.wav
+# Exception: Golden test fixtures must be tracked
+!tests/fixtures/golden_audio/*.wav
 *.aiff
 *.aif
 *.mp3
