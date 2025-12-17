@@ -36,6 +36,8 @@ jobs:
         pip install pytest pytest-cov
 
     - name: Run tests with coverage
+      env:
+        AFTERGLOW_UNSAFE_IO: "1"
       run: |
         pytest tests/ -v --cov=musiclib --cov-report=xml --cov-report=term
 
