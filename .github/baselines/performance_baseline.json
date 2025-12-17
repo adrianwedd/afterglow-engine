@@ -1,6 +1,6 @@
 {
-  "stft_analysis": 3.6879302140441723,
-  "crossfade_loop": 0.0037423582485644146,
-  "audio_normalization": 0.0027040616498561574,
-  "filter_design": 0.004335747699951753
+  "stft_analysis": 18.232060523005202,
+  "crossfade_loop": 0.004691360649303533,
+  "audio_normalization": 0.006368881399976089,
+  "filter_design": 0.0055525940598454325
 }
