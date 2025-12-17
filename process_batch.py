@@ -12,13 +12,16 @@ import shutil
 import yaml
 import glob
 import atexit
+from musiclib.logger import get_logger, log_success
+
+logger = get_logger(__name__)
 
 def run_step(cmd, desc):
-    print(f"\n>>> [BATCH] {desc}...")
+    logger.info(f"\n>>> [BATCH] {desc}...")
     try:
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"!!! Error in step '{desc}': {e}")
+        logger.error(f"Error in step '{desc}': {e}")
         return False
     return True
 
@@ -37,11 +40,11 @@ def main():
         with open(args.config, 'r') as f:
             config = yaml.safe_load(f)
     except Exception as e:
-        print(f"[!] Failed to load config: {e}")
+        logger.error(f"Failed to load config: {e}")
         sys.exit(1)
 
     if not config or 'paths' not in config:
-        print("[!] Invalid config: missing 'paths' section")
+        logger.error("Invalid config: missing 'paths' section")
         sys.exit(1)
 
     # Update config for batch
@@ -55,9 +58,9 @@ def main():
         if os.path.exists(temp_config):
             try:
                 os.remove(temp_config)
-                print(f"[*] Cleaned up temporary config: {temp_config}")
+                logger.info(f"Cleaned up temporary config: {temp_config}")
             except Exception as e:
-                print(f"[!] Failed to remove temp config {temp_config}: {e}", file=sys.stderr)
+                logger.error(f"Failed to remove temp config {temp_config}: {e}")
 
     atexit.register(cleanup_temp_config)
 
@@ -65,16 +68,16 @@ def main():
     with open(temp_config, 'w') as f:
         yaml.dump(config, f)
 
-    print(f"[*] Batch Config saved to {temp_config}")
+    logger.info(f"Batch Config saved to {temp_config}")
 
     batch_success = True
 
     # Step A: Mine Pads
     if not run_step(["python", "make_textures.py", "--config", temp_config, "--mine-pads", "--make-drones"], "Mining Pads & Drones"):
         batch_success = False
-    
+
     # Step B: Mine Drums & Silences
-    print("\n>>> [BATCH] Mining Drums & Silences...")
+    logger.info("\n>>> [BATCH] Mining Drums & Silences...")
     extensions = ['*.flac', '*.wav', '*.aiff', '*.mp3']
     files = []
     for ext in extensions:
@@ -90,15 +93,15 @@ def main():
         cmd_silence = ["python", "mine_silences.py", "--source", f, "--export", batch_export_root]
         if not run_step(cmd_silence, f"Silences: {os.path.basename(f)}"):
             batch_success = False
-        
-    print("\n>>> [BATCH] Curation (Skipped - run curate_best.py manually for now)")
-    
+
+    logger.info("\n>>> [BATCH] Curation (Skipped - run curate_best.py manually for now)")
+
     if batch_success:
-        print(f"\n[✓] Batch processing complete for phase 1. Output in {batch_export_root}")
-        print("    Next steps: Curate, Cloud, Dust, Format.")
+        log_success(logger, f"\nBatch processing complete for phase 1. Output in {batch_export_root}")
+        logger.info("    Next steps: Curate, Cloud, Dust, Format.")
         sys.exit(0)
     else:
-        print(f"\n[!] Batch processing completed with ERRORS. Check output above.")
+        logger.error(f"\nBatch processing completed with ERRORS. Check output above.")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -18,6 +18,10 @@ from pathlib import Path
 
 # Import musiclib modules (assumes running from repo root)
 from musiclib import io_utils, dsp_utils, audio_analyzer
+from musiclib.logger import get_logger, log_success
+from musiclib.exceptions import SilentArtifact
+
+logger = get_logger(__name__)
 
 # Configuration for this run
 DEFAULT_CONFIG = {
@@ -71,13 +75,13 @@ def extract_drum_slices(audio: np.ndarray, sr: int, config: dict) -> list:
     Detect onsets and slice audio into individual hits.
     """
     dm_config = config['drum_miner']
-    
-    print("    Analyzing onsets...")
-    
+
+    logger.info("    Analyzing onsets...")
+
     # onset_detect returns frame indices
     onset_frames = librosa.onset.onset_detect(
-        y=audio, 
-        sr=sr, 
+        y=audio,
+        sr=sr,
         backtrack=dm_config['onset_backtrack'],
         pre_max=dm_config['pre_max'],
         post_max=dm_config['post_max'],
@@ -87,11 +91,11 @@ def extract_drum_slices(audio: np.ndarray, sr: int, config: dict) -> list:
         wait=dm_config['wait'],
         units='samples' # Get samples directly
     )
-    
+
     if len(onset_frames) == 0:
         return []
-        
-    print(f"    Found {len(onset_frames)} raw onsets.")
+
+    logger.info(f"    Found {len(onset_frames)} raw onsets.")
     
     slices = []
     
@@ -135,8 +139,8 @@ def extract_drum_slices(audio: np.ndarray, sr: int, config: dict) -> list:
         # Normalize (skip if audio is silent/invalid)
         try:
             drum_audio = dsp_utils.normalize_audio(drum_audio, config['global']['target_peak_dbfs'])
-        except ValueError as e:
-            print(f"  [!] Skipping drum slice: {e}")
+        except SilentArtifact as e:
+            logger.debug(f"Skipping drum slice: {e}")
             continue
 
         slices.append(drum_audio)
@@ -160,38 +164,38 @@ def main():
             if isinstance(user_config, dict):
                 deep_update(config, user_config)
             else:
-                print(f"[!] Ignoring invalid config format in {args.config}")
+                logger.warning(f"Ignoring invalid config format in {args.config}")
     # Basic validation of required sections
     for section in ("paths", "global", "drum_miner"):
         if section not in config:
-            print(f"[!] Config missing required section '{section}'")
+            logger.error(f"Config missing required section '{section}'")
             return 1
-            
+
     # Paths
     source_path = args.source
     export_base = config['paths']['export_dir']
-    
+
     if not os.path.exists(source_path):
-        print(f"[!] Source not found: {source_path}")
+        logger.error(f"Source not found: {source_path}")
         return 1
-        
-    print(f"\n[DRUM MINER] Processing: {source_path}")
+
+    logger.info(f"\n[DRUM MINER] Processing: {source_path}")
     
     # Load audio
     sr = config['global']['sample_rate']
     try:
         audio, _ = io_utils.load_audio(source_path, sr=sr, mono=True)
     except Exception as e:
-        print(f"[!] Failed to load audio: {e}")
+        logger.error(f"Failed to load audio: {e}")
         return 1
-        
+
     if audio is None:
-        print("[!] Audio load returned None")
+        logger.error("Audio load returned None")
         return 1
-        
+
     # Extract
     slices = extract_drum_slices(audio, sr, config)
-    print(f"    → Extracted {len(slices)} valid drum slices.")
+    logger.info(f"    → Extracted {len(slices)} valid drum slices.")
     
     # Save
     stem = io_utils.get_filename_stem(source_path)
@@ -207,13 +211,13 @@ def main():
         # For now just save everything we found
 
         if not io_utils.save_audio(out_path, drum_audio, sr, bit_depth=24):
-            print(f"    [!] Failed to save: {out_path}")
+            logger.warning(f"    Failed to save: {out_path}")
             continue
         saved_count += 1
         if saved_count % 50 == 0:
-            print(f"    Saved {saved_count}...")
-            
-    print(f"[✓] Saved {saved_count} drum/percussion files to {output_dir}")
+            logger.info(f"    Saved {saved_count}...")
+
+    log_success(logger, f"Saved {saved_count} drum/percussion files to {output_dir}")
     return 0
 
 if __name__ == "__main__":

@@ -20,6 +20,10 @@ from scipy import signal
 from tqdm import tqdm
 from . import io_utils, dsp_utils, audio_analyzer
 from . import music_theory
+from .logger import get_logger, log_success
+from .exceptions import SilentArtifact, GrainExtractionError
+
+logger = get_logger(__name__)
 
 
 # ============================================================================
@@ -188,9 +192,9 @@ def extract_grains(
         )
         num_stable = np.sum(stable_mask) if stable_mask is not None else 0
         centroid_msg = f", centroid=[{centroid_low_hz},{centroid_high_hz}]" if (centroid_low_hz or centroid_high_hz) else ""
-        dsp_utils.vprint(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}] dB, DC={max_dc_offset}, crest={max_crest_factor}, consecutive={min_stable_windows}{centroid_msg})")
+        logger.debug(f"      [stable regions] {num_stable} / {len(stable_mask)} windows stable (onset_rate={max_onset_rate_hz}, RMS=[{min_rms_db},{max_rms_db}] dB, DC={max_dc_offset}, crest={max_crest_factor}, consecutive={min_stable_windows}{centroid_msg})")
         if num_stable == 0:
-            print(f"      [fallback] 0/{len(stable_mask)} windows stable; using least-onset fallback")
+            logger.debug(f"      [fallback] 0/{len(stable_mask)} windows stable; using least-onset fallback")
 
     # Extract grains with optional quality filtering
     attempts = 0
@@ -351,7 +355,9 @@ def apply_pitch_shift_grain(
         # Use kaiser_fast for better performance (default kaiser_best is too slow for grains)
         resampled = librosa.resample(processed_grain, orig_sr=sr, target_sr=sr / rate, res_type='kaiser_fast')
         return resampled
-    except Exception:
+    except Exception as e:
+        # Fallback: return original grain if pitch shift/resampling fails
+        logger.debug(f"Pitch shift failed (rate={rate}), using original grain: {e}")
         return grain
 
 
@@ -414,10 +420,10 @@ def create_cloud(
     # Create analyzer only if enabled
     analyzer = None
     if use_pre_analysis:
-        dsp_utils.vprint(f"  [pre-analysis] Analyzing audio: {analysis_window_sec}s window, {analysis_hop_sec}s hop, onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC_offset={max_dc_offset}, crest={max_crest}")
+        logger.debug(f"  [pre-analysis] Analyzing audio: {analysis_window_sec}s window, {analysis_hop_sec}s hop, onset_rate={max_onset_rate}, RMS=[{min_rms_db}, {max_rms_db}] dB, DC_offset={max_dc_offset}, crest={max_crest}")
         analyzer = audio_analyzer.AudioAnalyzer(audio, sr, window_size_sec=analysis_window_sec, hop_sec=analysis_hop_sec)
     else:
-        dsp_utils.vprint(f"  [pre-analysis] Disabled: using random grain extraction")
+        logger.debug(f"  [pre-analysis] Disabled: using random grain extraction")
 
     # Extract grains with quality filtering and optional pre-analysis
     grains = extract_grains(
@@ -587,7 +593,8 @@ def make_clouds_from_source(
     if musicality.get("reference_bpm") not in (None, "detect"):
         try:
             bpm_context = float(musicality["reference_bpm"])
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to parse reference_bpm: {e}")
             bpm_context = None
     elif musicality.get("reference_bpm") == "detect":
         if detected_bpm is not None:
@@ -630,8 +637,8 @@ def make_clouds_from_source(
         # Normalize (skip if audio is silent/invalid)
         try:
             cloud = dsp_utils.normalize_audio(cloud, peak_dbfs)
-        except ValueError as e:
-            print(f"  [!] Skipping cloud {i+1} for {stem_name}: {e}")
+        except SilentArtifact as e:
+            logger.warning(f"Skipping cloud {i+1} for {stem_name}: {e}")
             continue
 
         # Convert to stereo if requested
@@ -672,16 +679,16 @@ def process_cloud_sources(config: dict) -> dict:
     if random_seed is not None:
         prev_state = np.random.get_state()
         np.random.seed(random_seed)
-        print(f"[clouds] Random seed set to {random_seed} for reproducible grain placement")
+        logger.info(f"[clouds] Random seed set to {random_seed} for reproducible grain placement")
 
     musicality = config.get("musicality", {})
     target_key = musicality.get("target_key")
 
     if not files:
-        print(f"[*] No pad source files found for cloud generation in {pad_sources_dir}")
+        logger.info(f"No pad source files found for cloud generation in {pad_sources_dir}")
         return {}
 
-    print(f"\n[GRANULAR MAKER] Processing {len(files)} source file(s)...")
+    logger.info(f"\n[GRANULAR MAKER] Processing {len(files)} source file(s)...")
 
     results = {}
     try:
@@ -795,13 +802,13 @@ def save_clouds(
                 metadata["saved"] = False
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✕ {filename_with_tag} (grade F, skipped)")
+                logger.info(f"    ✕ {filename_with_tag} (grade F, skipped)")
                 continue
 
             if io_utils.save_audio(filepath, cloud_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✓ {filename_with_tag}")
+                log_success(logger, f"    {filename_with_tag}")
 
     return total_saved

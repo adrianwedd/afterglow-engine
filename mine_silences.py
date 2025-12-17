@@ -14,6 +14,10 @@ import soundfile as sf
 import librosa
 from pathlib import Path
 from musiclib import io_utils, dsp_utils
+from musiclib.logger import get_logger
+from musiclib.exceptions import SilentArtifact
+
+logger = get_logger(__name__)
 
 def mine_silences(
     source_path: str,
@@ -21,8 +25,8 @@ def mine_silences(
     sr: int = 44100,
     normalization_target_db: float = -12.0
 ):
-    print(f"\n[SILENCE MINER] Processing: {source_path}")
-    
+    logger.info(f"\n[SILENCE MINER] Processing: {source_path}")
+
     audio, _ = io_utils.load_audio(source_path, sr=sr, mono=True)
     if audio is None:
         return
@@ -86,8 +90,8 @@ def mine_silences(
         # Normalize to target level (makes silence audible as texture)
         try:
             chunk_norm = dsp_utils.normalize_audio(chunk, normalization_target_db)
-        except ValueError as e:
-            print(f"  [!] Skipping silence chunk: {e}")
+        except SilentArtifact as e:
+            logger.debug(f"Skipping silence chunk: {e}")
             continue
 
         # Apply fades to avoid clicks
@@ -98,14 +102,14 @@ def mine_silences(
         out_path = os.path.join(output_dir, filename)
 
         if not io_utils.save_audio(out_path, chunk_norm, sr, bit_depth=24):
-            print(f"    [!] Failed to save: {out_path}")
+            logger.warning(f"    Failed to save: {out_path}")
             continue
 
         found_count += 1
         if found_count >= max_extracted:
             break
-            
-    print(f"    → Extracted {found_count} soft silence/texture samples.")
+
+    logger.info(f"    → Extracted {found_count} soft silence/texture samples.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

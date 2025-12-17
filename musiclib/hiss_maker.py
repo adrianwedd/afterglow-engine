@@ -6,6 +6,10 @@ from typing import List, Tuple
 import numpy as np
 from tqdm import tqdm
 from . import io_utils, dsp_utils, music_theory
+from .logger import get_logger, log_success
+from .exceptions import SilentArtifact
+
+logger = get_logger(__name__)
 
 
 def create_synthetic_noise(
@@ -97,8 +101,8 @@ def make_hiss_loop(
     # Normalize (return None if audio is silent/invalid)
     try:
         hiss = dsp_utils.normalize_audio(hiss, -6.0)  # Slightly lower than main audio
-    except ValueError as e:
-        print(f"  [!] Cannot create hiss loop: {e}")
+    except SilentArtifact as e:
+        logger.warning(f"Cannot create hiss loop: {e}")
         return None
 
     return hiss
@@ -166,8 +170,8 @@ def make_flicker_burst(
     # Normalize (return None if audio is silent/invalid)
     try:
         flicker = dsp_utils.normalize_audio(flicker, -3.0)
-    except ValueError as e:
-        print(f"  [!] Cannot create flicker burst: {e}")
+    except SilentArtifact as e:
+        logger.warning(f"Cannot create flicker burst: {e}")
         return None
 
     return flicker
@@ -191,10 +195,10 @@ def process_hiss_from_drums(config: dict) -> dict:
     musicality = config.get("musicality", {})
 
     if not files:
-        print(f"[*] No drum files found in {drums_dir}, will use synthetic noise")
+        logger.info(f"No drum files found in {drums_dir}, will use synthetic noise")
         return {}
 
-    print(f"\n[HISS MAKER] Processing {len(files)} drum file(s)...")
+    logger.info(f"\n[HISS MAKER] Processing {len(files)} drum file(s)...")
 
     results = {}
     for filepath in tqdm(files, desc="Processing hiss", unit="file"):
@@ -276,7 +280,7 @@ def process_hiss_synthetic(config: dict) -> dict:
     if not hiss_config['use_synthetic_noise']:
         return {}
 
-    print("\n[HISS MAKER] Generating synthetic noise textures...")
+    logger.info("\n[HISS MAKER] Generating synthetic noise textures...")
 
     # Create synthetic noise source
     noise_duration = 30.0  # Generate 30 seconds of noise to sample from
@@ -319,7 +323,7 @@ def process_hiss_synthetic(config: dict) -> dict:
         filename = f"hiss_flicker_{i + 1:02d}.wav"
         outputs.append((flicker, filename))
 
-    print(f"  → Generated {len(outputs)} synthetic hiss audio file(s)")
+    logger.info(f"  → Generated {len(outputs)} synthetic hiss audio file(s)")
 
     return {"synthetic": {"outputs": outputs, "context": {}}}
 
@@ -402,13 +406,13 @@ def save_hiss(
                 metadata["saved"] = False
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✕ {filename} (grade F, skipped)")
+                logger.info(f"    ✕ {filename} (grade F, skipped)")
                 continue
 
             if io_utils.save_audio(filepath, hiss_audio, sr=sr, bit_depth=bit_depth):
                 total_saved += 1
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✓ {filename}")
+                log_success(logger, f"    {filename}")
 
     return total_saved

@@ -70,8 +70,19 @@ def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.nda
         Normalized audio array
 
     Raises:
+        ValueError: If audio is empty or contains NaN/Inf values
         SilentArtifact: If audio is silent (peak < 1e-8)
     """
+    # Validate input
+    if audio.size == 0:
+        raise ValueError("Cannot normalize empty audio array")
+
+    if np.any(np.isnan(audio)):
+        raise ValueError("Audio contains NaN values")
+
+    if np.any(np.isinf(audio)):
+        raise ValueError("Audio contains Inf values")
+
     peak = np.max(np.abs(audio))
     if peak < 1e-8:
         rms_db = rms_energy_db(audio)
@@ -82,7 +93,10 @@ def normalize_audio(audio: np.ndarray, target_peak_dbfs: float = -1.0) -> np.nda
         )
 
     target_linear = 10 ** (target_peak_dbfs / 20.0)
-    return audio * (target_linear / peak)
+    normalized = audio * (target_linear / peak)
+
+    # Clip to [-1, 1] range to prevent overflow
+    return np.clip(normalized, -1.0, 1.0)
 
 
 def linear_to_db(linear: float, min_db: float = -80.0) -> float:
@@ -350,8 +364,27 @@ def design_butterworth_bandpass(
 
     Returns:
         (b, a) coefficients for scipy.signal.filtfilt
+
+    Raises:
+        ValueError: If frequencies or sample rate are invalid
     """
+    # Validate parameters
+    if sr <= 0:
+        raise ValueError(f"Sample rate must be positive, got {sr}")
+
+    if low_hz < 0:
+        raise ValueError(f"Low frequency must be non-negative, got {low_hz}")
+
+    if high_hz < 0:
+        raise ValueError(f"High frequency must be non-negative, got {high_hz}")
+
+    if low_hz >= high_hz:
+        raise ValueError(f"Low frequency ({low_hz}) must be less than high frequency ({high_hz})")
+
     nyquist = sr / 2
+    if high_hz >= nyquist:
+        raise ValueError(f"High frequency ({high_hz}) must be less than Nyquist frequency ({nyquist})")
+
     low_norm = low_hz / nyquist
     high_norm = high_hz / nyquist
     low_norm = np.clip(low_norm, 0.01, 0.99)

@@ -2,6 +2,9 @@
 
 # afterglow-engine
 
+![CI](https://github.com/adrianwedd/afterglow-engine/workflows/CI/badge.svg)
+![Performance](https://github.com/adrianwedd/afterglow-engine/workflows/Performance%20Regression%20Detection/badge.svg)
+
 *A small offline tool that mines your past audio work for new textures.*
 
 ---
@@ -114,7 +117,39 @@ This will:
 
 ## What's New
 
-Latest: **v0.8.1 – Documentation & Tutorial**
+Latest: **v0.9.0 – The Sentinel (Production Hardening)**
+
+A production readiness release transforming afterglow-engine from prototype to battle-tested system:
+
+**Observability & Error Handling:**
+* **Structured logging** – Module-level tagging with configurable verbosity (`AFTERGLOW_LOG_LEVEL`)
+* **Custom exception hierarchy** – Domain-specific errors (SilentArtifact, ClippedArtifact) with debugging context
+* **Graceful degradation** – Batch processing continues when individual files fail
+* See [docs/LOGGING.md](docs/LOGGING.md), [docs/ERROR_HANDLING.md](docs/ERROR_HANDLING.md)
+
+**CI/CD & Quality Gates:**
+* **GitHub Actions workflows** – Automated testing across Python 3.9, 3.10, 3.11
+* **Performance regression detection** – Fails builds if >20% slower than baseline
+* **Code quality checks** – Flake8, Black, MyPy integration
+* See [docs/CI_CD.md](docs/CI_CD.md)
+
+**Robustness:**
+* **Edge case hardening** – 26 robustness tests for corrupt audio, extreme configs, filesystem issues
+* **Input validation** – NaN/Inf detection, parameter range checking across all DSP functions
+* **Security** – Path traversal protection with `AFTERGLOW_UNSAFE_IO` testing override
+
+**Performance:**
+* **STFT caching corrected** – >100,000× speedup on subsequent calls (essentially free after first computation)
+* **Single-pass overhead** – 66% reduction in STFT overhead within analysis passes
+* See [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
+
+**Migration:**
+* **Minimal breaking changes** – Most v0.8 code works unchanged
+* **Migration guide** – Step-by-step upgrade instructions at [docs/MIGRATION_V0.9.md](docs/MIGRATION_V0.9.md)
+
+---
+
+**v0.8.1 – Documentation & Tutorial**
 
 A documentation patch adding a comprehensive 15-minute getting started guide. No functional changes from v0.8.0.
 
@@ -188,7 +223,10 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history or [TUTORIAL.md](docs/
   ```bash
   pytest
   ```
-  73 tests covering DSP validation, spectral analysis, crossfades, grain synthesis, batch tools, and curation logic.
+  149 tests covering DSP validation, spectral analysis, crossfades, grain synthesis, batch tools, curation logic, robustness (corrupt audio, extreme configs, filesystem issues), security, and error handling.
+
+* **CI/CD**:
+  Automated testing runs on every commit via GitHub Actions across Python 3.9, 3.10, 3.11. See [docs/CI_CD.md](docs/CI_CD.md).
 
 * **Determinism**:
   Set `reproducibility.random_seed` in your config to make test runs repeatable.
@@ -197,14 +235,15 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history or [TUTORIAL.md](docs/
   ```bash
   python tests/profile_performance.py
   ```
+  Benchmarks STFT caching, cloud generation scaling, and pipeline bottlenecks. See [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ---
 
 ## Dependencies & Notes
 
-* **librosa** is required for pitch shifting and some analysis paths. If it’s absent, those paths fail gracefully (e.g. cloud pitch-shift is skipped), but install the full `requirements.txt` for intended behavior.
+* **librosa** is required for pitch shifting and some analysis paths. If it's absent, those paths fail gracefully (e.g. cloud pitch-shift is skipped), but install the full `requirements.txt` for intended behavior.
 * Exports are WAVs (44.1 kHz, 16/24-bit) organized by source folder.
-* Tested primarily on **Python 3.11**. Other 3.8+ versions may work but are not regularly exercised.
+* **Python support**: Tested and CI-validated on Python 3.9, 3.10, 3.11 across all commits. Earlier versions (3.8+) may work but are not regularly tested.
 
 ---
 
@@ -230,7 +269,7 @@ All outputs are standard WAVs (44.1 kHz, 24-bit or 16-bit), ready for any sample
 
 ### Prerequisites
 
-* Python 3.11 recommended (3.8+ may work)
+* Python 3.9, 3.10, or 3.11 (CI-validated)
 * macOS or Linux
 
 ### Installation
@@ -288,8 +327,10 @@ python make_textures.py --make-hiss
 Common flags:
 
 * `--config <path>` – point at a different YAML.
+* `--verbose` – Enable debug logging (v0.9+). Equivalent to `AFTERGLOW_LOG_LEVEL=DEBUG`.
+* `--strict` – Fail on first error (v0.9+). Useful for CI/CD validation.
+* `--dry-run` – Preview what will be generated without creating files.
 * Set `reproducibility.random_seed` in the config for deterministic runs.
-* Enable verbose pre-analysis logs: call `dsp_utils.set_verbose(True)` in a small wrapper if you need to debug stability masks.
 
 ### Curation & Manifest (v0.5+)
 

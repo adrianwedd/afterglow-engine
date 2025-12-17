@@ -1,0 +1,89 @@
+# Dytiq chord capture: no pitch/time shifts, just loopable pads
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  pad_sources_dir: pad_sources_deep
+  drums_dir: drums
+  export_dir: export/tr8s_dytiq_clean
+
+pad_miner:
+  target_durations_sec: [2.5, 4.5]
+  min_rms_db: -46.0
+  max_rms_db: -8.0
+  max_onset_rate_per_second: 2.5
+  spectral_flatness_threshold: 0.6
+  max_candidates_per_file: 4
+  loop_crossfade_ms: 220
+  window_hop_sec: 0.45
+
+pre_analysis:
+  enabled: true
+  analysis_window_sec: 1.0
+  analysis_hop_sec: 0.5
+  max_onset_rate_hz: 2.5
+  min_rms_db: -46.0
+  max_rms_db: -8.0
+  max_dc_offset: 0.05
+  max_crest_factor: 12.0
+  grain_quality_threshold: 0.6
+  min_stable_windows: 2
+  skip_clipped_regions: true
+  skip_transient_regions: true
+
+drones:
+  pad_loop_duration_sec: 2.0
+  pad_variants: []          # disable extra variants (no pitch/time)
+  warm_lowpass_hz: 3200
+  airy_highpass_hz: 5800
+  dark_high_cut_hz: 1100
+  swell_duration_sec: 10.0
+  fade_in_sec: 1.0
+  fade_out_sec: 2.5
+  pitch_shift_semitones: [0]   # no shifting
+  time_stretch_factors: [1.0]  # no stretching
+  enable_reversal: false
+
+clouds:
+  grain_length_min_ms: 100
+  grain_length_max_ms: 180
+  grains_per_cloud: 160
+  cloud_duration_sec: 8.0
+  pitch_shift_range:
+    min: -3
+    max: 3
+  overlap_ratio: 0.7
+  lowpass_hz: 9000
+  clouds_per_source: 1
+  target_peak_dbfs: -3.0
+
+export:
+  pads_stereo: true
+  swells_stereo: false
+  clouds_stereo: true
+  hiss_stereo: true
+
+brightness_tags:
+  enabled: true
+  centroid_low_hz: 1200
+  centroid_high_hz: 4000
+
+curation:
+  auto_delete_grade_f: false
+  thresholds:
+    min_rms_db: -60.0
+    clipping_tolerance: 0.01
+    max_crest_factor: 25.0
+
+musicality:
+  reference_bpm: "detect"
+  snap_to_grid: false
+  bar_lengths: [1, 2, 4]
+  target_key: null
+
+reproducibility:
+  random_seed: null

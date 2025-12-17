@@ -35,7 +35,20 @@ class AudioAnalyzer:
             sr: Sample rate
             window_size_sec: Analysis window size in seconds
             hop_sec: Hop size in seconds
+
+        Raises:
+            ValueError: If parameters are invalid (negative/zero sample rate, etc.)
         """
+        # Validate parameters
+        if sr <= 0:
+            raise ValueError(f"Sample rate must be positive, got {sr}")
+
+        if window_size_sec <= 0:
+            raise ValueError(f"Window size must be positive, got {window_size_sec}")
+
+        if hop_sec < 0:
+            raise ValueError(f"Hop size must be non-negative, got {hop_sec}")
+
         self.audio = audio
         self.sr = sr
         self.window_size_sec = window_size_sec

@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    name: Run Full Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsndfile1 ffmpeg
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+
+    - name: Run tests
+      run: |
+        pytest tests/ -v
+
+  release:
+    name: Create Release
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Create Release Archive
+      run: |
+        mkdir -p release
+        tar -czf release/afterglow-engine-v${{ steps.get_version.outputs.VERSION }}.tar.gz \
+          --exclude='.git' \
+          --exclude='venv*' \
+          --exclude='export' \
+          --exclude='*.pyc' \
+          --exclude='__pycache__' \
+          --exclude='.pytest_cache' \
+          --exclude='.github' \
+          .
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release v${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## afterglow-engine v${{ steps.get_version.outputs.VERSION }}
+
+          *A machine for sonic archaeology.*
+
+          ### Installation
+
+          ```bash
+          tar -xzf afterglow-engine-v${{ steps.get_version.outputs.VERSION }}.tar.gz
+          cd afterglow-engine
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          ```
+
+          ### Verification
+
+          ```bash
+          pytest tests/
+          ```
+
+          See [README.md](README.md) for usage instructions.
+        files: |
+          release/afterglow-engine-v${{ steps.get_version.outputs.VERSION }}.tar.gz
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -15,6 +15,26 @@ from musiclib.exceptions import PermissionError as AfterglowPermissionError
 class TestPathTraversalProtection(unittest.TestCase):
     """Verify security protections against path traversal"""
 
+    def setUp(self):
+        """Ensure security is enabled before each test."""
+        # Clear AFTERGLOW_UNSAFE_IO to ensure security is active
+        if "AFTERGLOW_UNSAFE_IO" in os.environ:
+            self._original_unsafe_io = os.environ.pop("AFTERGLOW_UNSAFE_IO")
+        else:
+            self._original_unsafe_io = None
+
+    def tearDown(self):
+        """Restore environment after each test."""
+        # Restore original AFTERGLOW_UNSAFE_IO if it was set
+        if self._original_unsafe_io is not None:
+            os.environ["AFTERGLOW_UNSAFE_IO"] = self._original_unsafe_io
+        elif "AFTERGLOW_UNSAFE_IO" in os.environ:
+            os.environ.pop("AFTERGLOW_UNSAFE_IO")
+
+        # Clean up AFTERGLOW_EXPORT_ROOT if set by test
+        if "AFTERGLOW_EXPORT_ROOT" in os.environ:
+            os.environ.pop("AFTERGLOW_EXPORT_ROOT")
+
     def test_symlink_escape_blocked(self):
         """Verify that symlinks cannot be used to escape export directory"""
         with tempfile.TemporaryDirectory() as tmp:

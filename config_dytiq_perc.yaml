@@ -1,0 +1,29 @@
+# Percussion-focused extraction for Dytiq (short, clean hits)
+
+global:
+  sample_rate: 44100
+  output_bit_depth: 24
+  target_peak_dbfs: -1.0
+
+paths:
+  source_audio_dir: source_audio
+  export_dir: export/tr8s_dytiq_clean
+
+drum_miner:
+  enabled: true
+  onset_backtrack: true
+  pre_max: 10
+  post_max: 10
+  pre_avg: 50
+  post_avg: 50
+  delta: 0.04
+  wait: 20
+  slice_mode: onset_to_onset
+  fixed_length_sec: 0.3
+  max_length_sec: 0.45
+  min_length_sec: 0.03
+  fade_in_ms: 2
+  fade_out_ms: 25
+  min_peak_db: -32.0
+  max_peak_db: -0.3
+  max_saved_per_file: 200

@@ -3,6 +3,9 @@ Lightweight musical analysis helpers: key and tempo detection.
 """
 from typing import Optional, Tuple
 import numpy as np
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     import librosa
@@ -38,7 +41,8 @@ def detect_key(audio: np.ndarray, sr: int) -> Optional[str]:
             if min_score > best[1]:
                 best = (f"{NOTE_NAMES[i]} min", min_score)
         return best[0] if best else None
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Key detection failed: {e}")
         return None
 
 
@@ -56,7 +60,8 @@ def detect_bpm(audio: np.ndarray, sr: int) -> Tuple[Optional[float], float]:
         # Normalize confidence: 0 beats/sec -> 0, 4 beats/sec -> ~1 (capped)
         confidence = min(1.0, beat_rate / 4.0)
         return (float(tempo), confidence)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"BPM detection failed: {e}")
         return (None, 0.0)
 
 
@@ -89,5 +94,6 @@ def get_transposition_interval(source_key: str, target_key: str) -> int:
         while diff < -6:
             diff += 12
         return diff
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Transposition calculation failed: {e}")
         return 0

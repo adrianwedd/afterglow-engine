@@ -8,6 +8,10 @@ import argparse
 import numpy as np
 import soundfile as sf
 from musiclib import io_utils, dsp_utils
+from musiclib.logger import get_logger, log_success
+from musiclib.exceptions import SilentArtifact
+
+logger = get_logger(__name__)
 
 def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
     # Load Pad
@@ -59,13 +63,13 @@ def dust_pad(pad_path, hiss_path, output_path, hiss_db=-12.0, sr=44100):
     # Normalize (preserve headroom)
     try:
         mixed = dsp_utils.normalize_audio(mixed, -1.0)
-    except ValueError as e:
-        print(f"  [!] Cannot dust {output_path}: {e}")
+    except SilentArtifact as e:
+        logger.warning(f"Cannot dust {output_path}: {e}")
         return False
 
     # Save (using io_utils for export-root containment)
     if not io_utils.save_audio(output_path, mixed, sr, bit_depth=24):
-        print(f"  [!] Failed to save (export-root check): {output_path}")
+        logger.warning(f"Failed to save (export-root check): {output_path}")
         return False
     return True
 
@@ -82,20 +86,20 @@ def main():
     # Get lists
     pads = [os.path.join(args.pads_dir, f) for f in os.listdir(args.pads_dir) if f.endswith('.wav')]
     hisses = [os.path.join(args.hiss_dir, f) for f in os.listdir(args.hiss_dir) if f.endswith('.wav')]
-    
+
     if not pads or not hisses:
-        print("Missing pads or hiss files.")
+        logger.warning("Missing pads or hiss files.")
         return
-    
-    print(f"[DUSTER] Mixing {len(pads)} pads with random hiss layers...")
-    
+
+    logger.info(f"[DUSTER] Mixing {len(pads)} pads with random hiss layers...")
+
     count = 0
     import random
-    
+
     for pad_p in pads:
         # Pick a random hiss for each pad
         hiss_p = random.choice(hisses)
-        
+
         fname = os.path.basename(pad_p)
         name, ext = os.path.splitext(fname)
         hiss_name = os.path.splitext(os.path.basename(hiss_p))[0]
@@ -104,15 +108,15 @@ def main():
             hiss_suffix = hiss_name.replace("hiss_", "")[:8]
         else:
             hiss_suffix = hiss_name[:5]
-            
+
         out_name = f"{name}_dust_{hiss_suffix}{ext}"
         out_path = os.path.join(args.output_dir, out_name)
-        
+
         if dust_pad(pad_p, hiss_p, out_path, args.mix_db):
-            print(f"  Created {out_name}")
+            log_success(logger, f"  Created {out_name}")
             count += 1
-            
-    print(f"[✓] Created {count} dusted pads.")
+
+    log_success(logger, f"Created {count} dusted pads.")
 
 if __name__ == "__main__":
     main()

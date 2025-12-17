@@ -21,7 +21,11 @@ from pathlib import Path
 
 # Import musiclib modules
 from musiclib import segment_miner, drone_maker, granular_maker, hiss_maker, io_utils, dsp_utils
+from musiclib.logger import get_logger, log_success
 from validate_config import validate_config
+import logging
+
+logger = get_logger(__name__)
 
 
 DEFAULT_CONFIG_YAML = """# Global audio settings
@@ -175,10 +179,10 @@ def load_or_create_config(config_path: str = "config.yaml") -> dict:
     if os.path.exists(config_path):
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
-            print(f"[*] Loaded config from {config_path}")
+            logger.info(f"Loaded config from {config_path}")
             return config
     else:
-        print(f"[*] Config not found, creating default at {config_path}")
+        logger.info(f"Config not found, creating default at {config_path}")
         with open(config_path, 'w') as f:
             f.write(DEFAULT_CONFIG_YAML)
         config = yaml.safe_load(DEFAULT_CONFIG_YAML)
@@ -203,9 +207,9 @@ def run_mine_pads(config: dict) -> None:
     pad_dict = segment_miner.mine_all_pads(config)
     if pad_dict:
         total = segment_miner.save_mined_pads(pad_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {total} pad(s) to {config['paths']['export_dir']}/ ")
+        log_success(logger, f"\nSaved {total} pad(s) to {config['paths']['export_dir']}/")
     else:
-        print(f"\n[!] No pads mined (check {config['paths']['source_audio_dir']})")
+        logger.warning(f"\nNo pads mined (check {config['paths']['source_audio_dir']})")
 
 
 def run_make_drones(config: dict) -> None:
@@ -213,9 +217,9 @@ def run_make_drones(config: dict) -> None:
     drone_dict = drone_maker.process_pad_sources(config)
     if drone_dict:
         pads, swells = drone_maker.save_drone_outputs(drone_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {pads} pad(s) and {swells} swell(s)")
+        log_success(logger, f"\nSaved {pads} pad(s) and {swells} swell(s)")
     else:
-        print(f"\n[!] No drone sources processed (check {config['paths']['pad_sources_dir']})")
+        logger.warning(f"\nNo drone sources processed (check {config['paths']['pad_sources_dir']})")
 
 
 def run_make_clouds(config: dict) -> None:
@@ -223,9 +227,9 @@ def run_make_clouds(config: dict) -> None:
     clouds_dict = granular_maker.process_cloud_sources(config)
     if clouds_dict:
         total = granular_maker.save_clouds(clouds_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {total} cloud(s) to {config['paths']['export_dir']}/ ")
+        log_success(logger, f"\nSaved {total} cloud(s) to {config['paths']['export_dir']}/")
     else:
-        print(f"\n[!] No clouds generated (check {config['paths']['pad_sources_dir']})")
+        logger.warning(f"\nNo clouds generated (check {config['paths']['pad_sources_dir']})")
 
 
 def dry_run_preview(config: dict, operations: list) -> None:
@@ -236,10 +240,10 @@ def dry_run_preview(config: dict, operations: list) -> None:
         config: Configuration dictionary
         operations: List of operation names ['mine_pads', 'make_drones', etc.]
     """
-    print("\n" + "=" * 60)
-    print(" DRY RUN PREVIEW")
-    print("=" * 60)
-    print("\nNo files will be created. Scanning source directories...\n")
+    logger.info("\n" + "=" * 60)
+    logger.info(" DRY RUN PREVIEW")
+    logger.info("=" * 60)
+    logger.info("\nNo files will be created. Scanning source directories...\n")
 
     total_estimate = 0
 
@@ -250,12 +254,12 @@ def dry_run_preview(config: dict, operations: list) -> None:
         estimate = len(files) * max_candidates
         total_estimate += estimate
 
-        print(f"[MINE PADS]")
-        print(f"  Source directory: {source_dir}")
-        print(f"  Audio files found: {len(files)}")
-        print(f"  Max candidates per file: {max_candidates}")
-        print(f"  → Estimated pads: ~{estimate}")
-        print()
+        logger.info(f"[MINE PADS]")
+        logger.info(f"  Source directory: {source_dir}")
+        logger.info(f"  Audio files found: {len(files)}")
+        logger.info(f"  Max candidates per file: {max_candidates}")
+        logger.info(f"  → Estimated pads: ~{estimate}")
+        logger.info("")
 
     if 'make_drones' in operations:
         pad_sources_dir = config['paths']['pad_sources_dir']
@@ -273,13 +277,13 @@ def dry_run_preview(config: dict, operations: list) -> None:
         total_drones = len(files) * (pads_per_source + swells_per_source)
         total_estimate += total_drones
 
-        print(f"[MAKE DRONES]")
-        print(f"  Source directory: {pad_sources_dir}")
-        print(f"  Audio files found: {len(files)}")
-        print(f"  Variants: {variants} pad types × {pitch_shifts} pitches × {time_stretches} stretches × {reversal} directions")
-        print(f"  → Estimated pads: ~{len(files) * pads_per_source}")
-        print(f"  → Estimated swells: ~{len(files) * swells_per_source}")
-        print()
+        logger.info(f"[MAKE DRONES]")
+        logger.info(f"  Source directory: {pad_sources_dir}")
+        logger.info(f"  Audio files found: {len(files)}")
+        logger.info(f"  Variants: {variants} pad types × {pitch_shifts} pitches × {time_stretches} stretches × {reversal} directions")
+        logger.info(f"  → Estimated pads: ~{len(files) * pads_per_source}")
+        logger.info(f"  → Estimated swells: ~{len(files) * swells_per_source}")
+        logger.info("")
 
     if 'make_clouds' in operations:
         pad_sources_dir = config['paths']['pad_sources_dir']
@@ -288,13 +292,13 @@ def dry_run_preview(config: dict, operations: list) -> None:
         estimate = len(files) * clouds_per_source
         total_estimate += estimate
 
-        print(f"[MAKE CLOUDS]")
-        print(f"  Source directory: {pad_sources_dir}")
-        print(f"  Audio files found: {len(files)}")
-        print(f"  Clouds per source: {clouds_per_source}")
-        print(f"  Grains per cloud: {config['clouds'].get('grains_per_cloud', 200)}")
-        print(f"  → Estimated clouds: ~{estimate}")
-        print()
+        logger.info(f"[MAKE CLOUDS]")
+        logger.info(f"  Source directory: {pad_sources_dir}")
+        logger.info(f"  Audio files found: {len(files)}")
+        logger.info(f"  Clouds per source: {clouds_per_source}")
+        logger.info(f"  Grains per cloud: {config['clouds'].get('grains_per_cloud', 200)}")
+        logger.info(f"  → Estimated clouds: ~{estimate}")
+        logger.info("")
 
     if 'make_hiss' in operations:
         drums_dir = config['paths']['drums_dir']
@@ -304,19 +308,19 @@ def dry_run_preview(config: dict, operations: list) -> None:
         estimate = len(files) * (loops_per_source + flickers)
         total_estimate += estimate
 
-        print(f"[MAKE HISS]")
-        print(f"  Source directory: {drums_dir}")
-        print(f"  Audio files found: {len(files)}")
-        print(f"  Loops per source: {loops_per_source}")
-        print(f"  Flickers per source: {flickers}")
-        print(f"  → Estimated textures: ~{estimate}")
-        print()
+        logger.info(f"[MAKE HISS]")
+        logger.info(f"  Source directory: {drums_dir}")
+        logger.info(f"  Audio files found: {len(files)}")
+        logger.info(f"  Loops per source: {loops_per_source}")
+        logger.info(f"  Flickers per source: {flickers}")
+        logger.info(f"  → Estimated textures: ~{estimate}")
+        logger.info("")
 
-    print("=" * 60)
-    print(f" TOTAL ESTIMATED OUTPUT: ~{total_estimate} files")
-    print(f" Export directory: {config['paths']['export_dir']}")
-    print("=" * 60)
-    print("\nTo generate these files, run without --dry-run flag.")
+    logger.info("=" * 60)
+    logger.info(f" TOTAL ESTIMATED OUTPUT: ~{total_estimate} files")
+    logger.info(f" Export directory: {config['paths']['export_dir']}")
+    logger.info("=" * 60)
+    logger.info("\nTo generate these files, run without --dry-run flag.")
 
 
 def run_make_hiss(config: dict) -> None:
@@ -324,9 +328,9 @@ def run_make_hiss(config: dict) -> None:
     hiss_dict = hiss_maker.make_all_hiss(config)
     if hiss_dict:
         total = hiss_maker.save_hiss(hiss_dict, config, manifest=config.get("_manifest"))
-        print(f"\n[✓] Saved {total} hiss audio file(s) to {config['paths']['export_dir']}/ ")
+        log_success(logger, f"\nSaved {total} hiss audio file(s) to {config['paths']['export_dir']}/")
     else:
-        print(f"\n[!] No hiss textures generated")
+        logger.warning(f"\nNo hiss textures generated")
 
 
 def main():
@@ -381,8 +385,23 @@ Examples:
         action='store_true',
         help='Preview what would be generated without creating files'
     )
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Enable verbose debug logging (shows detailed processing info)'
+    )
+    parser.add_argument(
+        '--strict',
+        action='store_true',
+        help='Fail fast on first error (useful for CI/CD pipelines)'
+    )
 
     args = parser.parse_args()
+
+    # Configure logging level based on --verbose flag
+    if args.verbose:
+        logging.getLogger('musiclib').setLevel(logging.DEBUG)
+        logger.info("Debug logging enabled")
 
     # If no subcommand specified, show help
     if not any([args.all, args.mine_pads, args.make_drones, args.make_clouds, args.make_hiss]):
@@ -402,7 +421,7 @@ Examples:
     random_seed = reproducibility_config.get('random_seed', None)
     if random_seed is not None:
         dsp_utils.set_random_seed(random_seed)
-        print(f"[*] Random seed set to {random_seed} (reproducible mode)")
+        logger.info(f"Random seed set to {random_seed} (reproducible mode)")
 
     # Determine which operations to run
     operations = []
@@ -423,9 +442,9 @@ Examples:
     # Normal execution mode
     ensure_directories(config)
 
-    print("\n" + "=" * 60)
-    print(" Music Texture Generator for TR-8S")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info(" Music Texture Generator for TR-8S")
+    logger.info("=" * 60)
 
     # Run requested operations
     if 'mine_pads' in operations:
@@ -458,12 +477,12 @@ Examples:
 
         # Atomic move (POSIX guarantees atomicity on same filesystem)
         shutil.move(tmp_path, manifest_path)
-        print(f"[manifest] Wrote {len(manifest)} rows to {manifest_path}")
+        logger.info(f"[manifest] Wrote {len(manifest)} rows to {manifest_path}")
 
-    print("\n" + "=" * 60)
-    print(" Export directory: " + config['paths']['export_dir'])
-    print(" Ready to copy to TR-8S SD card!")
-    print("=" * 60 + "\n")
+    logger.info("\n" + "=" * 60)
+    logger.info(" Export directory: " + config['paths']['export_dir'])
+    logger.info(" Ready to copy to TR-8S SD card!")
+    logger.info("=" * 60 + "\n")
 
     return 0
 

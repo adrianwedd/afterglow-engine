@@ -7,6 +7,10 @@ import numpy as np
 import librosa
 from tqdm import tqdm
 from . import io_utils, dsp_utils, music_theory
+from .logger import get_logger, log_success
+from .exceptions import SilentArtifact
+
+logger = get_logger(__name__)
 
 
 def process_pad_source(
@@ -33,7 +37,8 @@ def process_pad_source(
         try:
             audio_base = librosa.effects.pitch_shift(audio, sr=sr, n_steps=base_shift)
             results.append((audio_base, "original_tuned"))
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Pitch shift failed (base_shift={base_shift}), using original: {e}")
             audio_base = audio
             results.append((audio, "original_tuned_failed"))
     else:
@@ -49,7 +54,8 @@ def process_pad_source(
                 # Apply shift to the potentially already-transposed base
                 shifted = librosa.effects.pitch_shift(audio_base, sr=sr, n_steps=shift)
                 results.append((shifted, f"pitch_{shift:+d}"))
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Pitch shift failed (shift={shift:+d}), skipping: {e}")
                 continue
 
     # Time stretches
@@ -60,14 +66,15 @@ def process_pad_source(
                 continue
             if factor > 4.0:
                 factor = 4.0
-            
+
             if librosa is None:
                 continue
-                
+
             try:
                 stretched = librosa.effects.time_stretch(audio_base, rate=factor)
                 results.append((stretched, f"stretch_{factor:.1f}x"))
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Time stretch failed (factor={factor:.1f}x), skipping: {e}")
                 continue
 
     return results
@@ -177,8 +184,8 @@ def make_pad_loops(
     peak_dbfs = config['global']['target_peak_dbfs']
     try:
         pad = dsp_utils.normalize_audio(pad, peak_dbfs)
-    except ValueError as e:
-        print(f"  [!] Skipping pad loop for {stem_name}: {e}")
+    except SilentArtifact as e:
+        logger.warning(f"Skipping pad loop for {stem_name}: {e}")
         return []
 
     # Create variants
@@ -244,8 +251,8 @@ def make_swells(
     # Normalize (skip if audio is silent/invalid)
     try:
         swell = dsp_utils.normalize_audio(swell, peak_dbfs)
-    except ValueError as e:
-        print(f"  [!] Skipping swell for {stem_name}: {e}")
+    except SilentArtifact as e:
+        logger.warning(f"Skipping swell for {stem_name}: {e}")
         return []
 
     filename = f"{stem_name}_swell{swell_index:02d}.wav"
@@ -291,8 +298,8 @@ def make_reversed_variants(
         reversed_audio = dsp_utils.normalize_audio(
             reversed_audio, config['global']['target_peak_dbfs']
         )
-    except ValueError as e:
-        print(f"  [!] Skipping reversed variant for {stem_name}: {e}")
+    except SilentArtifact as e:
+        logger.warning(f"Skipping reversed variant for {stem_name}: {e}")
         return []
 
     filename = f"{stem_name}_reversed.wav"
@@ -317,10 +324,10 @@ def process_pad_sources(config: dict) -> dict:
     target_key = musicality.get("target_key")
 
     if not files:
-        print(f"[*] No pad source files found in {pad_sources_dir}")
+        logger.info(f"No pad source files found in {pad_sources_dir}")
         return {}
 
-    print(f"\n[DRONE MAKER] Processing {len(files)} pad source file(s)...")
+    logger.info(f"\n[DRONE MAKER] Processing {len(files)} pad source file(s)...")
 
     results = {}
     for filepath in tqdm(files, desc="Processing drones", unit="file"):
@@ -453,7 +460,7 @@ def save_drone_outputs(
                 metadata["saved"] = False
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✕ {filename} (grade F, skipped)")
+                logger.info(f"    ✕ {filename} (grade F, skipped)")
                 continue
 
             if io_utils.save_audio(filepath, audio, sr=sr, bit_depth=bit_depth):
@@ -463,6 +470,6 @@ def save_drone_outputs(
                     pads_saved += 1
                 if manifest is not None:
                     manifest.append(metadata)
-                print(f"    ✓ {filename}")
+                log_success(logger, f"    {filename}")
 
     return pads_saved, swells_saved
