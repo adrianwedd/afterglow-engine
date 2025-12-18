@@ -128,7 +128,7 @@ A production readiness release transforming afterglow-engine from prototype to b
 * See [docs/LOGGING.md](docs/LOGGING.md), [docs/ERROR_HANDLING.md](docs/ERROR_HANDLING.md)
 
 **CI/CD & Quality Gates:**
-* **GitHub Actions workflows** – Automated testing across Python 3.9, 3.10, 3.11
+* **GitHub Actions workflows** – Automated testing across Python 3.10, 3.11
 * **Performance regression detection** – Fails builds if >20% slower than baseline
 * **Code quality checks** – Flake8, Black, MyPy integration
 * See [docs/CI_CD.md](docs/CI_CD.md)
@@ -226,7 +226,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history or [TUTORIAL.md](docs/
   149 tests covering DSP validation, spectral analysis, crossfades, grain synthesis, batch tools, curation logic, robustness (corrupt audio, extreme configs, filesystem issues), security, and error handling.
 
 * **CI/CD**:
-  Automated testing runs on every commit via GitHub Actions across Python 3.9, 3.10, 3.11. See [docs/CI_CD.md](docs/CI_CD.md).
+  Automated testing runs on every commit via GitHub Actions across Python 3.10, 3.11. See [docs/CI_CD.md](docs/CI_CD.md).
 
 * **Determinism**:
   Set `reproducibility.random_seed` in your config to make test runs repeatable.
@@ -243,7 +243,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full release history or [TUTORIAL.md](docs/
 
 * **librosa** is required for pitch shifting and some analysis paths. If it's absent, those paths fail gracefully (e.g. cloud pitch-shift is skipped), but install the full `requirements.txt` for intended behavior.
 * Exports are WAVs (44.1 kHz, 16/24-bit) organized by source folder.
-* **Python support**: Tested and CI-validated on Python 3.9, 3.10, 3.11 across all commits. Earlier versions (3.8+) may work but are not regularly tested.
+* **Python support**: Tested and CI-validated on Python 3.10, 3.11 across all commits. Earlier versions (3.8+) may work but are not regularly tested.
 
 ---
 
@@ -269,7 +269,7 @@ All outputs are standard WAVs (44.1 kHz, 24-bit or 16-bit), ready for any sample
 
 ### Prerequisites
 
-* Python 3.9, 3.10, or 3.11 (CI-validated)
+* Python 3.10 or 3.11 (CI-validated)
 * macOS or Linux
 
 ### Installation
