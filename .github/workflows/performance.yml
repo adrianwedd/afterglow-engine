@@ -3,8 +3,15 @@ name: Performance Regression Detection
 on:
   pull_request:
     branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
   push:
     branches: [ main ]
+    paths:
+      - 'musiclib/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/performance.yml'
+      - '.github/baselines/**'
 
 jobs:
   benchmark:

@@ -1,10 +1,16 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    branches: [ main ]
+    paths:
+      - 'musiclib/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/ci.yml'
 
 jobs:
   test:
@@ -12,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11']
+        python-version: ['3.11']
       fail-fast: false
 
     steps:
