@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1200">
+  <title>afterglow-engine OG Image</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: #0c0a0e;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .card {
+      position: relative;
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+    }
+
+    /* ── Layered background ──────────────────── */
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 30% 45%, rgba(232, 151, 107, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 70% 60%, rgba(120, 80, 160, 0.03) 0%, transparent 60%);
+    }
+
+    /* ── Echo rings visualization ─────────────── */
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 1200px;
+      height: 630px;
+      opacity: 0.5;
+    }
+
+    /* ── Content ─────────────────────────────── */
+    .content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      padding: 72px 80px;
+    }
+
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: #e8976b;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 86px;
+      font-weight: 400;
+      color: #e8e4ec;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      margin-bottom: 24px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: #e8976b;
+    }
+
+    .subtitle {
+      font-size: 22px;
+      font-weight: 300;
+      color: #9a9198;
+      line-height: 1.5;
+      max-width: 600px;
+    }
+
+    /* ── Stats bar ───────────────────────────── */
+    .stats {
+      position: absolute;
+      bottom: 64px;
+      left: 80px;
+      right: 80px;
+      display: flex;
+      gap: 48px;
+      z-index: 3;
+    }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 500;
+      color: #e8e4ec;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: #6b6470;
+    }
+
+    /* ── GitHub badge ─────────────────────────── */
+    .badge {
+      position: absolute;
+      top: 64px;
+      right: 80px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: #9a9198;
+      padding: 10px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(26, 22, 32, 0.7);
+    }
+
+    .badge svg { opacity: 0.7; }
+
+    /* ── Decorative border ────────────────────── */
+    .border-frame {
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Corner accents ──────────────────────── */
+    .corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      z-index: 4;
+    }
+    .corner::before, .corner::after {
+      content: '';
+      position: absolute;
+      background: rgba(232, 151, 107, 0.25);
+    }
+    .corner::before { width: 24px; height: 1px; }
+    .corner::after { width: 1px; height: 24px; }
+    .corner.tl { top: 16px; left: 16px; }
+    .corner.tl::before { top: 0; left: 0; }
+    .corner.tl::after { top: 0; left: 0; }
+    .corner.tr { top: 16px; right: 16px; }
+    .corner.tr::before { top: 0; right: 0; }
+    .corner.tr::after { top: 0; right: 0; }
+    .corner.bl { bottom: 16px; left: 16px; }
+    .corner.bl::before { bottom: 0; left: 0; }
+    .corner.bl::after { bottom: 0; left: 0; }
+    .corner.br { bottom: 16px; right: 16px; }
+    .corner.br::before { bottom: 0; right: 0; }
+    .corner.br::after { bottom: 0; right: 0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="bg-gradient"></div>
+    <div class="border-frame"></div>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <canvas id="rings" width="2400" height="1260"></canvas>
+
+    <div class="badge">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+      Open Source
+    </div>
+
+    <div class="content">
+      <div class="eyebrow">A Machine for Sonic Archaeology</div>
+      <h1>Distill the<br><em>afterglow</em></h1>
+      <p class="subtitle">Ingest your audio archives and unweave them into textures, surfaces, and dust.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-value">5</span>
+        <span class="stat-label">stages</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">Python 3.11+</span>
+        <span class="stat-label">runtime</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">MIT</span>
+        <span class="stat-label">license</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">v0.9.0</span>
+        <span class="stat-label">The Sentinel</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Static echo rings — frozen frame for screenshot
+    const canvas = document.getElementById('rings');
+    const ctx = canvas.getContext('2d');
+    const w = 1200, h = 630;
+    const dpr = 2;
+    ctx.scale(dpr, dpr);
+
+    // Draw 3 concentric rings at different stages
+    const rings = [
+      { cx: 350, cy: 280, r: 80, alpha: 0.3 },
+      { cx: 350, cy: 280, r: 160, alpha: 0.2 },
+      { cx: 350, cy: 280, r: 280, alpha: 0.1 },
+    ];
+
+    rings.forEach(ring => {
+      ctx.strokeStyle = `rgba(232, 151, 107, ${ring.alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ring.cx, ring.cy, ring.r, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // Scattered particles around outer ring
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 260 + Math.random() * 120;
+      const px = 350 + Math.cos(angle) * dist;
+      const py = 280 + Math.sin(angle) * dist;
+      const alpha = 0.08 + Math.random() * 0.15;
+      ctx.fillStyle = `rgba(232, 151, 107, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(px, py, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  </script>
+</body>
+</html>
