@@ -91,13 +91,93 @@
 
     /* Divider */
     .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s var(--ease-out-expo), transform 0.8s var(--ease-out-expo); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* Section styles */
+    section { padding: 4rem 0; }
+    .section-label { font-family: var(--mono); font-size: 0.65rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 0.75rem; }
+    .section-title { font-family: var(--display); font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 400; color: var(--text); line-height: 1.15; margin-bottom: 1rem; }
+    .section-title em { font-style: italic; color: var(--accent); }
+    .section-desc { font-size: 1.1rem; color: var(--text-secondary); max-width: 540px; margin-bottom: 2rem; }
+
+    /* Philosophy closing */
+    .philosophy-closing { font-family: var(--display); font-style: italic; font-size: 1.1rem; color: var(--text-dim); margin-top: 1.5rem; }
+    .section-desc em { font-style: italic; color: var(--accent); }
+
+    /* Pipeline */
+    .pipeline { position: relative; padding-left: 28px; }
+    .pipeline-thread { position: absolute; left: 19px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent), transparent); opacity: 0.3; }
+    .pipeline-stage { display: flex; gap: 1.5rem; align-items: flex-start; padding: 1.5rem 0; position: relative; }
+    .pipeline-stage + .pipeline-stage { border-top: 1px solid var(--border); }
+    .stage-node { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-hover); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; position: relative; z-index: 1; }
+    .stage-content { flex: 1; }
+    .stage-content h3 { font-family: var(--display); font-size: 1.35rem; font-weight: 400; margin-bottom: 0.25rem; }
+    .stage-poetic { color: var(--accent); font-style: italic; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .stage-content p { color: var(--text-secondary); font-size: 0.95rem; }
+    .stage-canvas { width: 100%; height: 60px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; margin-top: 0.75rem; display: block; }
+    .decomposition-container { position: sticky; top: 2rem; z-index: 2; margin-bottom: 2rem; }
+    .decomposition-canvas { width: 100%; height: 120px; border-radius: 8px; background: var(--bg-elevated); border: 1px solid var(--border); display: block; }
+
+    /* Texture gallery */
+    .texture-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.1rem; }
+    .texture-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.3rem 1.15rem; transition: border-color 0.3s, background 0.3s, transform 0.3s var(--ease-out-expo); cursor: default; position: relative; overflow: hidden; }
+    .texture-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, var(--accent-glow), transparent 70%); opacity: 0; transition: opacity 0.4s; }
+    .texture-card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); transform: translateY(-2px); }
+    .texture-card:hover::before { opacity: 1; }
+    .texture-card-inner { position: relative; z-index: 1; }
+    .texture-type { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.5rem; }
+    .texture-name { font-family: var(--display); font-size: 1.2rem; font-weight: 400; margin-bottom: 0.25rem; }
+    .texture-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .texture-wave { width: 100%; height: 32px; border-radius: 4px; background: var(--bg-elevated); display: block; margin-bottom: 0.5rem; }
+    .texture-card audio { width: 100%; height: 32px; border-radius: 4px; }
+    .audio-placeholder { height: 32px; background: var(--bg-elevated); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+
+    /* Code blocks */
+    pre { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.3rem; overflow-x: auto; font-family: var(--mono); font-size: 0.85rem; line-height: 1.65; position: relative; cursor: pointer; transition: border-color 0.3s; }
+    pre:hover { border-color: var(--border-hover); }
+    .copy-hint { position: absolute; top: 0.6rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+    pre:hover .copy-hint { opacity: 1; }
+    .yaml-key { color: var(--accent); }
+    .yaml-comment { color: var(--text-dim); }
+    .cli-prompt { color: var(--text-dim); }
+    .cli-cmd { color: var(--accent-bright); }
+    .cli-comment { color: var(--text-dim); }
+
+    /* Footer */
+    footer { padding: 3rem 0; border-top: 1px solid var(--border); text-align: center; }
+    .footer-tagline { font-family: var(--display); font-style: italic; font-size: 1.1rem; color: var(--text-dim); margin-bottom: 1rem; }
+    .footer-links { display: flex; gap: 1.5rem; justify-content: center; font-family: var(--mono); font-size: 0.75rem; }
+    .footer-links a { color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-version { color: var(--text-dim); font-family: var(--mono); font-size: 0.75rem; margin-top: 1.5rem; }
+
+    /* Reduced motion + responsive */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+      *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+      .decomposition-container { position: static; }
+    }
+    @media (max-width: 600px) {
+      .pipeline { padding-left: 0; }
+      .pipeline-thread { display: none; }
+      .stage-node { width: 32px; height: 32px; font-size: 0.9rem; }
+      .stage-canvas { height: 40px; }
+      .texture-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 400px) {
+      section { padding: 2.5rem 0; }
+      .texture-card { padding: 1rem; }
+    }
   </style>
 </head>
 <body>
   <a class="skip-link" href="#philosophy">Skip to content</a>
 
   <section class="hero" id="hero">
-    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+    <canvas class="hero-canvas" id="heroCanvas" role="img" aria-label="Animated echo rings expanding and dissolving"></canvas>
     <div class="container">
       <div class="hero-content">
         <div class="hero-eyebrow">Sonic Archaeology</div>
@@ -117,46 +197,202 @@
     </div>
   </section>
 
+  <main id="main">
+
   <div class="divider"></div>
 
-  <section id="philosophy">
-    <div class="container"></div>
+  <section id="philosophy" class="reveal">
+    <div class="container">
+      <div class="section-label">The Philosophy</div>
+      <h2 class="section-title">This tool does not compose.<br>It does not invent.</h2>
+      <p class="section-desc">It is kept in the back of the studio. Its purpose is to ingest existing audio archives and <em>unweave</em> them. It separates pigment from gesture. It mines for surfaces, atmosphere, and dust.</p>
+      <p class="philosophy-closing">"We are distilling memories, not processing signals."</p>
+    </div>
   </section>
 
   <div class="divider"></div>
 
-  <section id="pipeline">
-    <div class="container"></div>
+  <section id="pipeline" class="reveal">
+    <div class="container">
+      <div class="section-label">The Process</div>
+      <h2 class="section-title">From archive to <em>texture</em></h2>
+      <p class="section-desc">Five stages of sonic distillation. Each pass extracts a different layer of memory.</p>
+      <div class="decomposition-container">
+        <canvas class="decomposition-canvas" id="decompCanvas" role="img" aria-label="Waveform decomposing into frequency layers"></canvas>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-thread"></div>
+        <div class="pipeline-stage reveal">
+          <div class="stage-node">&#128269;</div>
+          <div class="stage-content">
+            <h3>Pre-Analysis</h3>
+            <p class="stage-poetic">Surveying the dig site.</p>
+            <p>Scans for stability — RMS energy, onset density, spectral flatness. Only worthy regions pass the gate.</p>
+            <canvas class="stage-canvas" data-stage="analysis" role="img" aria-label="Stability heatmap visualization"></canvas>
+          </div>
+        </div>
+        <div class="pipeline-stage reveal">
+          <div class="stage-node">&#9724;</div>
+          <div class="stage-content">
+            <h3>Pad Mining</h3>
+            <p class="stage-poetic">Extracting the surfaces.</p>
+            <p>Finds sustained, stable moments in full tracks. Extracts loopable segments with phase-aligned crossfades.</p>
+            <canvas class="stage-canvas" data-stage="pads" role="img" aria-label="Waveform with highlighted stable regions"></canvas>
+          </div>
+        </div>
+        <div class="pipeline-stage reveal">
+          <div class="stage-node">&#9678;</div>
+          <div class="stage-content">
+            <h3>Drone &amp; Swell Generation</h3>
+            <p class="stage-poetic">Stretching time into infinity.</p>
+            <p>Time-stretches and pitch-shifts tonal material into infinite drones and evolving one-shot swells. Warm, airy, dark variants.</p>
+            <canvas class="stage-canvas" data-stage="drones" role="img" aria-label="Time-stretched waveform morphing"></canvas>
+          </div>
+        </div>
+        <div class="pipeline-stage reveal">
+          <div class="stage-node">&#9729;</div>
+          <div class="stage-content">
+            <h3>Granular Clouds</h3>
+            <p class="stage-poetic">Dissolving memory into atmosphere.</p>
+            <p>Breaks audio into grains, filters for quality, reassembles into evolving cloud textures with pitch and time variation.</p>
+            <canvas class="stage-canvas" data-stage="clouds" role="img" aria-label="Particle cloud drifting"></canvas>
+          </div>
+        </div>
+        <div class="pipeline-stage reveal">
+          <div class="stage-node">&#10023;</div>
+          <div class="stage-content">
+            <h3>Hiss &amp; Dust</h3>
+            <p class="stage-poetic">The residue of rhythm.</p>
+            <p>Extracts high-frequency content — the air, the hiss, the transient flickers. Creates tremolo loops and flicker bursts from the ghost of percussion.</p>
+            <canvas class="stage-canvas" data-stage="hiss" role="img" aria-label="High-frequency noise flickering"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <div class="divider"></div>
 
-  <section id="gallery">
-    <div class="container"></div>
+  <section id="gallery" class="reveal">
+    <div class="container">
+      <div class="section-label">Listen</div>
+      <h2 class="section-title">Hear the <em>residue</em></h2>
+      <p class="section-desc">Each texture is a different layer of the same memory, distilled from a single source.</p>
+      <div class="texture-grid">
+        <div class="texture-card">
+          <div class="texture-card-inner">
+            <div class="texture-type">Pad</div>
+            <h3 class="texture-name">Amber Surface</h3>
+            <p class="texture-desc">Loopable sustained texture, warm variant</p>
+            <canvas class="texture-wave" data-card="0" role="img" aria-label="Waveform for Amber Surface"></canvas>
+            <audio controls src="audio/pad-amber-surface.wav" preload="none"></audio>
+          </div>
+        </div>
+        <div class="texture-card">
+          <div class="texture-card-inner">
+            <div class="texture-type">Drone</div>
+            <h3 class="texture-name">Stretched Memory</h3>
+            <p class="texture-desc">Time-stretched tonal material, airy variant</p>
+            <canvas class="texture-wave" data-card="1" role="img" aria-label="Waveform for Stretched Memory"></canvas>
+            <audio controls src="audio/drone-stretched-memory.wav" preload="none"></audio>
+          </div>
+        </div>
+        <div class="texture-card">
+          <div class="texture-card-inner">
+            <div class="texture-type">Cloud</div>
+            <h3 class="texture-name">Atmospheric Residue</h3>
+            <p class="texture-desc">Evolving grain cloud with slow pitch drift</p>
+            <canvas class="texture-wave" data-card="2" role="img" aria-label="Waveform for Atmospheric Residue"></canvas>
+            <audio controls src="audio/cloud-atmospheric-residue.wav" preload="none"></audio>
+          </div>
+        </div>
+        <div class="texture-card">
+          <div class="texture-card-inner">
+            <div class="texture-type">Hiss</div>
+            <h3 class="texture-name">Ghost Percussion</h3>
+            <p class="texture-desc">High-frequency dust with tremolo modulation</p>
+            <canvas class="texture-wave" data-card="3" role="img" aria-label="Waveform for Ghost Percussion"></canvas>
+            <audio controls src="audio/hiss-ghost-percussion.wav" preload="none"></audio>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <div class="divider"></div>
 
-  <section id="config">
-    <div class="container"></div>
+  <section id="config" class="reveal">
+    <div class="container">
+      <div class="section-label">Control</div>
+      <h2 class="section-title">Tune every <em>threshold</em></h2>
+      <p class="section-desc">One YAML file. Every parameter documented, every threshold validated.</p>
+      <pre role="group" aria-label="Configuration example"><span class="copy-hint">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
+
+<span class="yaml-key">pad_miner</span>:
+  <span class="yaml-key">rms_threshold_db</span>: -35        <span class="yaml-comment"># minimum energy to extract</span>
+  <span class="yaml-key">max_onset_rate</span>: 3.0          <span class="yaml-comment"># lower = more sustained</span>
+  <span class="yaml-key">loop_crossfade_ms</span>: 50        <span class="yaml-comment"># seamless loop points</span>
+
+<span class="yaml-key">clouds</span>:
+  <span class="yaml-key">grain_length_ms</span>: [40, 120]   <span class="yaml-comment"># grain size range</span>
+  <span class="yaml-key">grain_count</span>: 200              <span class="yaml-comment"># density of the cloud</span>
+  <span class="yaml-key">pitch_range_semitones</span>: [-2, 2] <span class="yaml-comment"># subtle pitch scatter</span>
+
+<span class="yaml-key">curation</span>:
+  <span class="yaml-key">auto_delete_grade_f</span>: true     <span class="yaml-comment"># silence and clipping, gone</span>
+  <span class="yaml-key">grade_thresholds</span>:
+    <span class="yaml-key">a_min_rms</span>: -25              <span class="yaml-comment"># only the best survive</span></pre>
+    </div>
   </section>
 
   <div class="divider"></div>
 
-  <section id="cli">
-    <div class="container"></div>
+  <section id="cli" class="reveal">
+    <div class="container">
+      <div class="section-label">Usage</div>
+      <h2 class="section-title">Run the <em>machine</em></h2>
+      <p class="section-desc">One command to mine. Individual stages when you want precision.</p>
+      <pre role="group" aria-label="CLI commands"><span class="copy-hint">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --mine-pads</span>     <span class="cli-comment"># surfaces only</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-clouds</span>   <span class="cli-comment"># atmosphere only</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-hiss</span>     <span class="cli-comment"># dust only</span></pre>
+    </div>
   </section>
 
   <div class="divider"></div>
 
-  <section id="install">
-    <div class="container"></div>
+  <section id="install" class="reveal">
+    <div class="container">
+      <div class="section-label">Begin</div>
+      <h2 class="section-title">Start <em>digging</em></h2>
+      <p class="section-desc">Three steps from clone to first extraction.</p>
+      <pre role="group" aria-label="Installation commands"><span class="copy-hint">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">git clone https://github.com/adrianwedd/afterglow-engine.git</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">cd afterglow-engine</span>
+
+<span class="cli-comment"># set up environment</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">python -m venv venv &amp;&amp; source venv/bin/activate</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">pip install -r requirements.txt</span>
+
+<span class="cli-comment"># run the machine</span>
+<span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span></pre>
+    </div>
   </section>
+
+  </main>
 
   <div class="divider"></div>
 
   <footer id="footer">
-    <div class="container"></div>
+    <div class="container">
+      <p class="footer-tagline">"The machine does not destroy. It archives."</p>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="https://github.com/adrianwedd/afterglow-engine">GitHub</a>
+        <a href="https://github.com/adrianwedd/afterglow-engine/tree/main/docs">Documentation</a>
+        <a href="https://github.com/adrianwedd/afterglow-engine/blob/main/LICENSE">License (MIT)</a>
+      </nav>
+      <p class="footer-version">afterglow-engine v0.9.0 — The Sentinel</p>
+    </div>
   </footer>
 
   <script>
@@ -299,6 +535,238 @@
       registerCanvas('hero', drawHero);
       setCanvasActive('hero', true);
     })();
+
+    // ── Scroll reveal ──────────────────────
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // ── Decomposition canvas ──────────────────────
+    (function() {
+      const canvas = document.getElementById('decompCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const section = document.getElementById('pipeline');
+      let w, h;
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        w = rect.width; h = rect.height;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.scale(dpr, dpr);
+      }
+      resize();
+      window.addEventListener('resize', () => { ctx.setTransform(1,0,0,1,0,0); resize(); });
+
+      function getScrollProgress() {
+        if (!section) return 0;
+        const rect = section.getBoundingClientRect();
+        const total = section.offsetHeight - window.innerHeight;
+        if (total <= 0) return 0;
+        const progress = -rect.top / total;
+        return Math.max(0, Math.min(1, progress));
+      }
+
+      function drawWaveform(yCenter, amplitude, freq, color, alpha) {
+        ctx.strokeStyle = color.replace('ALPHA', alpha);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let x = 0; x < w; x++) {
+          const y = yCenter + Math.sin(x * freq * 0.01 + yCenter) * amplitude
+                    + Math.sin(x * freq * 0.007) * amplitude * 0.5;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        const p = reducedMotion ? 1 : getScrollProgress();
+        const mid = h / 2;
+        const spread = p * (h * 0.35);
+
+        drawWaveform(mid - spread, 8 + p * 4, 3, 'rgba(232,151,107,ALPHA)', 0.5);
+        drawWaveform(mid, 12 - p * 4, 2, 'rgba(232,151,107,ALPHA)', 0.35);
+        drawWaveform(mid + spread, 6 + p * 3, 5, 'rgba(232,151,107,ALPHA)', 0.25);
+      }
+
+      if (reducedMotion) {
+        draw();
+      } else {
+        registerCanvas('decomp', draw);
+        const obs = new IntersectionObserver(([e]) => {
+          setCanvasActive('decomp', e.isIntersecting);
+        }, { threshold: 0.1 });
+        obs.observe(section);
+      }
+    })();
+
+    // ── Stage mini-canvases ──────────────────────
+    document.querySelectorAll('.stage-canvas').forEach(canvas => {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const stage = canvas.dataset.stage;
+      let w, h, lastDraw = 0;
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        w = rect.width; h = rect.height;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.scale(dpr, dpr);
+      }
+      resize();
+
+      const id = 'stage-' + stage;
+
+      function draw(t) {
+        if (t - lastDraw < 66) return;
+        lastDraw = t;
+        ctx.clearRect(0, 0, w, h);
+        const mid = h / 2;
+
+        switch(stage) {
+          case 'analysis': {
+            const segW = w / 20;
+            for (let i = 0; i < 20; i++) {
+              const stable = Math.sin(i * 0.8 + t * 0.001) > -0.3;
+              ctx.fillStyle = stable ? 'rgba(232,151,107,0.4)' : 'rgba(107,100,112,0.2)';
+              ctx.fillRect(i * segW + 1, 8, segW - 2, h - 16);
+            }
+            break;
+          }
+          case 'pads': {
+            ctx.strokeStyle = 'rgba(232,151,107,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let x = 0; x < w; x++) {
+              const y = mid + Math.sin(x * 0.03 + t * 0.0005) * (h * 0.3);
+              x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(232,151,107,0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const start = w * 0.3, end = w * 0.7;
+            for (let x = start; x < end; x++) {
+              const y = mid + Math.sin(x * 0.03 + t * 0.0005) * (h * 0.3);
+              x === start ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            break;
+          }
+          case 'drones': {
+            ctx.strokeStyle = 'rgba(232,151,107,0.35)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let x = 0; x < w; x++) {
+              const stretch = 1 + Math.sin(t * 0.0003) * 0.5;
+              const y = mid + Math.sin(x * 0.02 * stretch + t * 0.0002) * (h * 0.3)
+                        + Math.sin(x * 0.005 + t * 0.0001) * (h * 0.15);
+              x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            break;
+          }
+          case 'clouds': {
+            for (let i = 0; i < 30; i++) {
+              const px = (Math.sin(i * 7.3 + t * 0.0003) * 0.5 + 0.5) * w;
+              const py = (Math.cos(i * 5.1 + t * 0.0002) * 0.5 + 0.5) * h;
+              const alpha = 0.15 + Math.sin(i * 3.7 + t * 0.001) * 0.1;
+              ctx.fillStyle = `rgba(232,151,107,${alpha})`;
+              ctx.beginPath();
+              ctx.arc(px, py, 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            break;
+          }
+          case 'hiss': {
+            for (let x = 0; x < w; x += 4) {
+              const intensity = Math.random() * 0.3 + Math.sin(x * 0.1 + t * 0.005) * 0.1;
+              ctx.strokeStyle = `rgba(232,151,107,${Math.max(0, intensity)})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(x, h * 0.2);
+              ctx.lineTo(x, h * 0.8);
+              ctx.stroke();
+            }
+            break;
+          }
+        }
+      }
+
+      if (reducedMotion) {
+        draw(1000);
+      } else {
+        registerCanvas(id, draw);
+        const obs = new IntersectionObserver(([e]) => {
+          setCanvasActive(id, e.isIntersecting);
+        }, { threshold: 0.1 });
+        obs.observe(canvas);
+      }
+    });
+
+    // ── Texture card waveforms ──────────────────────
+    document.querySelectorAll('.texture-wave').forEach(canvas => {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const idx = parseInt(canvas.dataset.card || '0');
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.scale(dpr, dpr);
+
+      ctx.strokeStyle = 'rgba(232,151,107,0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x < w; x++) {
+        const seed = idx * 13.7;
+        const y = h/2 + Math.sin(x * 0.04 + seed) * (h * 0.3)
+                  + Math.sin(x * 0.02 + seed * 2) * (h * 0.15);
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    });
+
+    // Audio error fallback
+    document.querySelectorAll('.texture-card audio').forEach(audio => {
+      audio.addEventListener('error', () => {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'audio-placeholder';
+        placeholder.textContent = 'samples arriving soon';
+        audio.replaceWith(placeholder);
+      });
+    });
+
+    // ── Click to copy ──────────────────────
+    const copyFeedback = document.createElement('div');
+    copyFeedback.setAttribute('aria-live', 'polite');
+    copyFeedback.style.cssText = 'position:absolute;left:-9999px;';
+    document.body.appendChild(copyFeedback);
+
+    if (navigator.clipboard) {
+      document.querySelectorAll('pre[role="group"]').forEach(pre => {
+        pre.addEventListener('click', () => {
+          const text = pre.textContent.replace(/click to copy/g, '').trim();
+          navigator.clipboard.writeText(text).then(() => {
+            const hint = pre.querySelector('.copy-hint');
+            if (hint) {
+              hint.textContent = 'copied!';
+              copyFeedback.textContent = 'Copied to clipboard';
+              setTimeout(() => { hint.textContent = 'click to copy'; copyFeedback.textContent = ''; }, 1500);
+            }
+          });
+        });
+      });
+    } else {
+      document.querySelectorAll('.copy-hint').forEach(el => el.remove());
+    }
   </script>
 </body>
 </html>
