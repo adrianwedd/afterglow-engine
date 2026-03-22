@@ -158,5 +158,147 @@
   <footer id="footer">
     <div class="container"></div>
   </footer>
+
+  <script>
+    // ── Animation scheduler ──────────────────────
+    const animationRegistry = new Map();
+    let rafId = null;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function registerCanvas(id, drawFn) {
+      animationRegistry.set(id, { draw: drawFn, active: false });
+    }
+
+    function setCanvasActive(id, active) {
+      const entry = animationRegistry.get(id);
+      if (entry) entry.active = active;
+      if (active && !rafId) startLoop();
+    }
+
+    function startLoop() {
+      function tick(t) {
+        for (const [, c] of animationRegistry) {
+          if (c.active) c.draw(t);
+        }
+        rafId = requestAnimationFrame(tick);
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    // ── Hero echo-ring canvas ────────────────────
+    (function () {
+      const canvas = document.getElementById('heroCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      let w, h;
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        w = rect.width;
+        h = rect.height;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        ctx.scale(dpr, dpr);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      class Ring {
+        constructor() {
+          this.cx = Math.random() * w * 0.5;
+          this.cy = Math.random() * h;
+          this.r = 0;
+          this.maxR = 200 + Math.random() * 300;
+          this.speed = 0.3 + Math.random() * 0.5;
+          this.particles = [];
+        }
+
+        update() {
+          this.r += this.speed;
+
+          if (this.r > this.maxR * 0.7 && Math.random() < 0.15) {
+            const angle = Math.random() * Math.PI * 2;
+            const px = this.cx + Math.cos(angle) * this.r;
+            const py = this.cy + Math.sin(angle) * this.r;
+            this.particles.push({
+              x: px, y: py,
+              vx: Math.cos(angle) * 0.3,
+              vy: Math.sin(angle) * 0.3,
+              life: 1
+            });
+          }
+
+          for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.008;
+            if (p.life <= 0) this.particles.splice(i, 1);
+          }
+        }
+
+        draw(ctx) {
+          const alpha = Math.max(0, 1 - this.r / this.maxR) * 0.4;
+          if (alpha > 0) {
+            ctx.beginPath();
+            ctx.arc(this.cx, this.cy, this.r, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(232, 151, 107, ' + alpha + ')';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+
+          for (const p of this.particles) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(232, 151, 107, ' + (p.life * 0.5) + ')';
+            ctx.fill();
+          }
+        }
+
+        isDead() {
+          return this.r > this.maxR && this.particles.length === 0;
+        }
+      }
+
+      // Reduced motion: draw static rings once and exit
+      if (reducedMotion) {
+        const cx = w * 0.25;
+        const cy = h * 0.5;
+        const radii = [80, 160, 240];
+        const alphas = [0.3, 0.2, 0.1];
+        for (let i = 0; i < radii.length; i++) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, radii[i], 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(232, 151, 107, ' + alphas[i] + ')';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        return;
+      }
+
+      // Animated mode
+      const rings = [];
+      let lastSpawn = 0;
+
+      function drawHero(t) {
+        if (t - lastSpawn > 2000 && rings.length < 6) {
+          rings.push(new Ring());
+          lastSpawn = t;
+        }
+
+        ctx.clearRect(0, 0, w, h);
+
+        for (let i = rings.length - 1; i >= 0; i--) {
+          rings[i].update();
+          rings[i].draw(ctx);
+          if (rings[i].isDead()) rings.splice(i, 1);
+        }
+      }
+
+      registerCanvas('hero', drawHero);
+      setCanvasActive('hero', true);
+    })();
+  </script>
 </body>
 </html>
