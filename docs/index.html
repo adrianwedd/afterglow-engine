@@ -174,8 +174,9 @@
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#philosophy">Skip to content</a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
+  <header>
   <section class="hero" id="hero">
     <canvas class="hero-canvas" id="heroCanvas" role="img" aria-label="Animated echo rings expanding and dissolving"></canvas>
     <div class="container">
@@ -196,6 +197,7 @@
       </div>
     </div>
   </section>
+  </header>
 
   <main id="main">
 
@@ -326,7 +328,7 @@
       <div class="section-label">Control</div>
       <h2 class="section-title">Tune every <em>threshold</em></h2>
       <p class="section-desc">One YAML file. Every parameter documented, every threshold validated.</p>
-      <pre role="group" aria-label="Configuration example"><span class="copy-hint">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
+      <pre role="group" aria-label="Configuration example"><span class="copy-hint" role="button" aria-label="Copy to clipboard">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
 
 <span class="yaml-key">pad_miner</span>:
   <span class="yaml-key">rms_threshold_db</span>: -35        <span class="yaml-comment"># minimum energy to extract</span>
@@ -352,7 +354,7 @@
       <div class="section-label">Usage</div>
       <h2 class="section-title">Run the <em>machine</em></h2>
       <p class="section-desc">One command to mine. Individual stages when you want precision.</p>
-      <pre role="group" aria-label="CLI commands"><span class="copy-hint">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
+      <pre role="group" aria-label="CLI commands"><span class="copy-hint" role="button" aria-label="Copy to clipboard">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --mine-pads</span>     <span class="cli-comment"># surfaces only</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-clouds</span>   <span class="cli-comment"># atmosphere only</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-hiss</span>     <span class="cli-comment"># dust only</span></pre>
@@ -366,7 +368,7 @@
       <div class="section-label">Begin</div>
       <h2 class="section-title">Start <em>digging</em></h2>
       <p class="section-desc">Three steps from clone to first extraction.</p>
-      <pre role="group" aria-label="Installation commands"><span class="copy-hint">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
+      <pre role="group" aria-label="Installation commands"><span class="copy-hint" role="button" aria-label="Copy to clipboard">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">git clone https://github.com/adrianwedd/afterglow-engine.git</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">cd afterglow-engine</span>
 
@@ -734,8 +736,34 @@
       ctx.stroke();
     });
 
-    // Audio error fallback
+    // Audio playback — animate card waveform during play
     document.querySelectorAll('.texture-card audio').forEach(audio => {
+      const card = audio.closest('.texture-card');
+      const waveCanvas = card ? card.querySelector('.texture-wave') : null;
+      if (waveCanvas && !reducedMotion) {
+        const wCtx = waveCanvas.getContext('2d');
+        const wDpr = window.devicePixelRatio || 1;
+        const idx = parseInt(waveCanvas.dataset.card || '0');
+        const seed = idx * 13.7;
+        const wId = 'card-wave-' + idx;
+        const wW = waveCanvas.width / wDpr, wH = waveCanvas.height / wDpr;
+        registerCanvas(wId, function(t) {
+          wCtx.clearRect(0, 0, wW, wH);
+          wCtx.strokeStyle = 'rgba(232,151,107,0.4)';
+          wCtx.lineWidth = 1.5;
+          wCtx.beginPath();
+          for (let x = 0; x < wW; x++) {
+            const y = wH/2 + Math.sin(x * 0.04 + seed + t * 0.003) * (wH * 0.3)
+                      + Math.sin(x * 0.02 + seed * 2 + t * 0.002) * (wH * 0.15);
+            x === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+          }
+          wCtx.stroke();
+        });
+        audio.addEventListener('play', () => setCanvasActive(wId, true));
+        audio.addEventListener('pause', () => setCanvasActive(wId, false));
+        audio.addEventListener('ended', () => setCanvasActive(wId, false));
+      }
+      // Audio error fallback
       audio.addEventListener('error', () => {
         const placeholder = document.createElement('div');
         placeholder.className = 'audio-placeholder';
