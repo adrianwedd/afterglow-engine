@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>afterglow-engine — Sonic Archaeology</title>
+  <meta name="description" content="A machine for sonic archaeology. Ingest audio archives and distill them into pads, drones, clouds, and dust.">
+  <meta property="og:title" content="afterglow-engine — Sonic Archaeology">
+  <meta property="og:description" content="Distill textures, surfaces, and dust from your audio archives. Open source. Python.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://adrianwedd.github.io/afterglow-engine/">
+  <meta property="og:image" content="https://adrianwedd.github.io/afterglow-engine/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://adrianwedd.github.io/afterglow-engine/og-image.png">
+  <link rel="canonical" href="https://adrianwedd.github.io/afterglow-engine/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0a0e;
+      --bg-elevated: #151218;
+      --bg-card: #1a1620;
+      --bg-card-hover: #201c28;
+      --text: #e8e4ec;
+      --text-secondary: #9a9198;
+      --text-dim: #6b6470;
+      --accent: #e8976b;
+      --accent-glow: rgba(232, 151, 107, 0.15);
+      --accent-bright: #f0a87e;
+      --wave: #e8976b;
+      --wave-dim: rgba(232, 151, 107, 0.08);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(232, 151, 107, 0.25);
+      --display: 'Instrument Serif', Georgia, serif;
+      --body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --max-w: 800px;
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 1.0625rem;
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    ::selection { background: var(--accent-glow); color: var(--accent-bright); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .container { max-width: var(--max-w); margin: 0 auto; padding: 0 1.5rem; }
+
+    .skip-link {
+      position: absolute; left: -9999px; top: auto;
+      padding: 0.5rem 1rem; background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 0.8rem; z-index: 999;
+      border-radius: 0 0 6px 0; text-decoration: none;
+    }
+    .skip-link:focus { left: 0; top: 0; }
+
+    /* Hero */
+    .hero { position: relative; padding: 6rem 0 4rem; min-height: 80vh; display: flex; align-items: center; overflow: hidden; }
+    .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.4; pointer-events: none; }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-eyebrow { font-family: var(--mono); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 1.5rem; opacity: 0; animation: heroFade 0.8s 0.2s var(--ease-out-expo) forwards; }
+    .hero h1 { font-family: var(--display); font-size: clamp(2.6rem, 7vw, 4.5rem); font-weight: 400; color: var(--text); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 1.25rem; opacity: 0; animation: heroFade 0.8s 0.35s var(--ease-out-expo) forwards; }
+    .hero h1 em { font-style: italic; color: var(--accent); }
+    .hero .subtitle { font-size: 1.2rem; font-weight: 300; color: var(--text-secondary); max-width: 520px; margin-bottom: 2rem; line-height: 1.65; opacity: 0; animation: heroFade 0.8s 0.5s var(--ease-out-expo) forwards; }
+    .hero-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; opacity: 0; animation: heroFade 0.8s 0.65s var(--ease-out-expo) forwards; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.8rem; font-weight: 500; background: var(--accent); color: var(--bg); border: none; padding: 0.7rem 1.6rem; border-radius: 6px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.8rem; font-weight: 500; background: transparent; color: var(--text-secondary); border: 1px solid var(--border); padding: 0.65rem 1.4rem; border-radius: 6px; text-decoration: none; transition: color 0.2s, border-color 0.2s; }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+    .hero-stats { display: flex; gap: 2.5rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); opacity: 0; animation: heroFade 0.8s 0.8s var(--ease-out-expo) forwards; }
+    .stat-value { font-family: var(--display); font-size: 1.9rem; color: var(--text); line-height: 1; }
+    .stat-label { font-family: var(--mono); font-size: 0.65rem; font-weight: 400; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.35rem; }
+    @keyframes heroFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      .hero { padding: 4rem 0 2rem; min-height: auto; }
+      .hero-stats { flex-wrap: wrap; gap: 1.5rem; }
+      .hero-stats .stat { width: calc(50% - 0.75rem); }
+    }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#philosophy">Skip to content</a>
+
+  <section class="hero" id="hero">
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-eyebrow">Sonic Archaeology</div>
+        <h1>Distill the <em>afterglow</em></h1>
+        <p class="subtitle">A quiet machine that ingests your audio archives — finished tracks, forgotten sketches, buried experiments — and unweaves them into textures, surfaces, and dust.</p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="#install">Get Started</a>
+          <a class="btn-ghost" href="https://github.com/adrianwedd/afterglow-engine">View on GitHub →</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><div class="stat-value">5</div><div class="stat-label">Stages</div></div>
+          <div class="stat"><div class="stat-value">145+</div><div class="stat-label">Tests</div></div>
+          <div class="stat"><div class="stat-value">A–F</div><div class="stat-label">Grading</div></div>
+          <div class="stat"><div class="stat-value">44.1k</div><div class="stat-label">Sample Rate</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="philosophy">
+    <div class="container"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="pipeline">
+    <div class="container"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="gallery">
+    <div class="container"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="config">
+    <div class="container"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="cli">
+    <div class="container"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="install">
+    <div class="container"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <footer id="footer">
+    <div class="container"></div>
+  </footer>
+</body>
+</html>
