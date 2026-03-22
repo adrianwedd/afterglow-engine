@@ -569,10 +569,10 @@
         const rect = canvas.getBoundingClientRect();
         w = rect.width; h = rect.height;
         canvas.width = w * dpr; canvas.height = h * dpr;
-        ctx.scale(dpr, dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       resize();
-      window.addEventListener('resize', () => { ctx.setTransform(1,0,0,1,0,0); resize(); });
+      window.addEventListener('resize', resize);
 
       function getScrollProgress() {
         if (!section) return 0;
@@ -583,13 +583,18 @@
         return Math.max(0, Math.min(1, progress));
       }
 
-      function drawWaveform(yCenter, amplitude, freq, color, alpha) {
-        ctx.strokeStyle = color.replace('ALPHA', alpha);
+      function drawWaveform(yCenter, amplitude, freq, phase, alpha) {
+        ctx.strokeStyle = `rgba(232,151,107,${alpha})`;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let x = 0; x < w; x++) {
-          const y = yCenter + Math.sin(x * freq * 0.01 + yCenter) * amplitude
-                    + Math.sin(x * freq * 0.007) * amplitude * 0.5;
+          const nx = x / w;
+          // Envelope: fade edges to zero
+          const env = Math.sin(nx * Math.PI);
+          const y = yCenter
+            + Math.sin(x * 0.025 * freq + phase) * amplitude * env
+            + Math.sin(x * 0.015 * freq + phase * 1.3) * amplitude * 0.4 * env
+            + Math.sin(x * 0.06 * freq + phase * 0.7) * amplitude * 0.15 * env;
           x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -599,11 +604,16 @@
         ctx.clearRect(0, 0, w, h);
         const p = reducedMotion ? 1 : getScrollProgress();
         const mid = h / 2;
-        const spread = p * (h * 0.35);
+        // At p=0 all three bands overlap at center; at p=1 they spread across full height
+        const spread = p * (h * 0.32);
+        const amp = h * 0.12; // ~15px on 120px canvas — visible but not overwhelming
 
-        drawWaveform(mid - spread, 8 + p * 4, 3, 'rgba(232,151,107,ALPHA)', 0.5);
-        drawWaveform(mid, 12 - p * 4, 2, 'rgba(232,151,107,ALPHA)', 0.35);
-        drawWaveform(mid + spread, 6 + p * 3, 5, 'rgba(232,151,107,ALPHA)', 0.25);
+        // Low band — slowest frequency, strongest
+        drawWaveform(mid - spread, amp * (1 + p * 0.3), 1.0, 0, 0.55 - p * 0.1);
+        // Mid band — medium frequency
+        drawWaveform(mid, amp * (0.8 + p * 0.2), 1.8, 2.5, 0.4);
+        // High band — fastest frequency, thinnest
+        drawWaveform(mid + spread, amp * (0.6 + p * 0.4), 3.2, 5.0, 0.3 + p * 0.1);
       }
 
       if (reducedMotion) {
