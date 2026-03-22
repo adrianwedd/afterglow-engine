@@ -108,6 +108,7 @@
     .section-desc em { font-style: italic; color: var(--accent); }
 
     /* Pipeline */
+    #pipeline { background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(232,151,107,0.03) 39px, rgba(232,151,107,0.03) 40px); }
     .pipeline { position: relative; padding-left: 28px; }
     .pipeline-thread { position: absolute; left: 19px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent), transparent); opacity: 0.3; }
     .pipeline-stage { display: flex; gap: 1.5rem; align-items: flex-start; padding: 1.5rem 0; position: relative; }
@@ -137,8 +138,8 @@
 
     /* Code blocks */
     pre { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.3rem; overflow-x: auto; font-family: var(--mono); font-size: 0.85rem; line-height: 1.65; position: relative; cursor: pointer; transition: border-color 0.3s; }
-    pre:hover { border-color: var(--border-hover); }
-    .copy-hint { position: absolute; top: 0.6rem; right: 0.8rem; font-size: 0.6rem; color: var(--text-dim); opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+    pre:hover { border-color: rgba(255, 255, 255, 0.1); }
+    .copy-hint { position: absolute; top: 0.6rem; right: 0.8rem; font-family: var(--mono); font-size: 0.6rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); opacity: 0; transition: opacity 0.2s; pointer-events: none; }
     pre:hover .copy-hint { opacity: 1; }
     .yaml-key { color: var(--accent); }
     .yaml-comment { color: var(--text-dim); }
@@ -166,6 +167,7 @@
       .stage-node { width: 32px; height: 32px; font-size: 0.9rem; }
       .stage-canvas { height: 40px; }
       .texture-grid { grid-template-columns: 1fr; }
+      .decomposition-container { position: static; }
     }
     @media (max-width: 400px) {
       section { padding: 2.5rem 0; }
@@ -186,7 +188,7 @@
         <p class="subtitle">A quiet machine that ingests your audio archives — finished tracks, forgotten sketches, buried experiments — and unweaves them into textures, surfaces, and dust.</p>
         <div class="hero-actions">
           <a class="btn-primary" href="#install">Get Started</a>
-          <a class="btn-ghost" href="https://github.com/adrianwedd/afterglow-engine">View on GitHub →</a>
+          <a class="btn-ghost" href="https://github.com/adrianwedd/afterglow-engine">View on GitHub</a>
         </div>
         <div class="hero-stats">
           <div class="stat"><div class="stat-value">5</div><div class="stat-label">Stages</div></div>
@@ -328,7 +330,7 @@
       <div class="section-label">Control</div>
       <h2 class="section-title">Tune every <em>threshold</em></h2>
       <p class="section-desc">One YAML file. Every parameter documented, every threshold validated.</p>
-      <pre role="group" aria-label="Configuration example"><span class="copy-hint" role="button" aria-label="Copy to clipboard">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
+      <pre role="group" aria-label="Configuration example"><span class="copy-hint">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
 
 <span class="yaml-key">pad_miner</span>:
   <span class="yaml-key">rms_threshold_db</span>: -35        <span class="yaml-comment"># minimum energy to extract</span>
@@ -354,7 +356,7 @@
       <div class="section-label">Usage</div>
       <h2 class="section-title">Run the <em>machine</em></h2>
       <p class="section-desc">One command to mine. Individual stages when you want precision.</p>
-      <pre role="group" aria-label="CLI commands"><span class="copy-hint" role="button" aria-label="Copy to clipboard">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
+      <pre role="group" aria-label="CLI commands"><span class="copy-hint">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --mine-pads</span>     <span class="cli-comment"># surfaces only</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-clouds</span>   <span class="cli-comment"># atmosphere only</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-hiss</span>     <span class="cli-comment"># dust only</span></pre>
@@ -368,7 +370,7 @@
       <div class="section-label">Begin</div>
       <h2 class="section-title">Start <em>digging</em></h2>
       <p class="section-desc">Three steps from clone to first extraction.</p>
-      <pre role="group" aria-label="Installation commands"><span class="copy-hint" role="button" aria-label="Copy to clipboard">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
+      <pre role="group" aria-label="Installation commands"><span class="copy-hint">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">git clone https://github.com/adrianwedd/afterglow-engine.git</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">cd afterglow-engine</span>
 
@@ -437,7 +439,7 @@
         h = rect.height;
         canvas.width = w * dpr;
         canvas.height = h * dpr;
-        ctx.scale(dpr, dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       resize();
       window.addEventListener('resize', resize);
@@ -542,12 +544,17 @@
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) {
-          e.target.classList.add('visible');
+          const delay = e.target.dataset.revealDelay || 0;
+          setTimeout(() => e.target.classList.add('visible'), delay);
           revealObserver.unobserve(e.target);
         }
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
     document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+    // Stagger pipeline stages
+    document.querySelectorAll('.pipeline-stage.reveal').forEach((el, i) => {
+      el.dataset.revealDelay = i * 150;
+    });
 
     // ── Decomposition canvas ──────────────────────
     (function() {
@@ -621,9 +628,10 @@
         const rect = canvas.getBoundingClientRect();
         w = rect.width; h = rect.height;
         canvas.width = w * dpr; canvas.height = h * dpr;
-        ctx.scale(dpr, dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       resize();
+      window.addEventListener('resize', resize);
 
       const id = 'stage-' + stage;
 
@@ -638,7 +646,7 @@
             const segW = w / 20;
             for (let i = 0; i < 20; i++) {
               const stable = Math.sin(i * 0.8 + t * 0.001) > -0.3;
-              ctx.fillStyle = stable ? 'rgba(232,151,107,0.4)' : 'rgba(107,100,112,0.2)';
+              ctx.fillStyle = stable ? 'rgba(100,180,100,0.4)' : 'rgba(107,100,112,0.2)';
               ctx.fillRect(i * segW + 1, 8, segW - 2, h - 16);
             }
             break;
