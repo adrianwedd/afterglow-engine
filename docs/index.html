@@ -283,7 +283,7 @@
             <h3 class="texture-name">Amber Surface</h3>
             <p class="texture-desc">Loopable sustained texture, warm variant</p>
             <canvas class="texture-wave" data-card="0" role="img" aria-label="Waveform for Amber Surface"></canvas>
-            <audio controls src="audio/pad-amber-surface.wav" preload="none"></audio>
+            <audio controls src="audio/pad-amber-surface.wav" preload="none" aria-label="Amber Surface audio sample"></audio>
           </div>
         </div>
         <div class="texture-card">
@@ -292,7 +292,7 @@
             <h3 class="texture-name">Stretched Memory</h3>
             <p class="texture-desc">Time-stretched tonal material, airy variant</p>
             <canvas class="texture-wave" data-card="1" role="img" aria-label="Waveform for Stretched Memory"></canvas>
-            <audio controls src="audio/drone-stretched-memory.wav" preload="none"></audio>
+            <audio controls src="audio/drone-stretched-memory.wav" preload="none" aria-label="Stretched Memory audio sample"></audio>
           </div>
         </div>
         <div class="texture-card">
@@ -301,7 +301,7 @@
             <h3 class="texture-name">Atmospheric Residue</h3>
             <p class="texture-desc">Evolving grain cloud with slow pitch drift</p>
             <canvas class="texture-wave" data-card="2" role="img" aria-label="Waveform for Atmospheric Residue"></canvas>
-            <audio controls src="audio/cloud-atmospheric-residue.wav" preload="none"></audio>
+            <audio controls src="audio/cloud-atmospheric-residue.wav" preload="none" aria-label="Atmospheric Residue audio sample"></audio>
           </div>
         </div>
         <div class="texture-card">
@@ -310,7 +310,7 @@
             <h3 class="texture-name">Ghost Percussion</h3>
             <p class="texture-desc">High-frequency dust with tremolo modulation</p>
             <canvas class="texture-wave" data-card="3" role="img" aria-label="Waveform for Ghost Percussion"></canvas>
-            <audio controls src="audio/hiss-ghost-percussion.wav" preload="none"></audio>
+            <audio controls src="audio/hiss-ghost-percussion.wav" preload="none" aria-label="Ghost Percussion audio sample"></audio>
           </div>
         </div>
       </div>
@@ -324,7 +324,7 @@
       <div class="section-label">Control</div>
       <h2 class="section-title">Tune every <em>threshold</em></h2>
       <p class="section-desc">One YAML file. Every parameter documented, every threshold validated.</p>
-      <pre role="group" aria-label="Configuration example"><span class="copy-hint">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
+      <pre role="group" aria-label="Configuration example" tabindex="0"><span class="copy-hint">click to copy</span><span class="yaml-comment"># config.yaml — the control surface</span>
 
 <span class="yaml-key">pad_miner</span>:
   <span class="yaml-key">rms_threshold_db</span>: -35        <span class="yaml-comment"># minimum energy to extract</span>
@@ -350,7 +350,7 @@
       <div class="section-label">Usage</div>
       <h2 class="section-title">Run the <em>machine</em></h2>
       <p class="section-desc">One command to mine. Individual stages when you want precision.</p>
-      <pre role="group" aria-label="CLI commands"><span class="copy-hint">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
+      <pre role="group" aria-label="CLI commands" tabindex="0"><span class="copy-hint">click to copy</span><span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --all</span>           <span class="cli-comment"># full pipeline</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --mine-pads</span>     <span class="cli-comment"># surfaces only</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-clouds</span>   <span class="cli-comment"># atmosphere only</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">python make_textures.py --make-hiss</span>     <span class="cli-comment"># dust only</span></pre>
@@ -364,7 +364,7 @@
       <div class="section-label">Begin</div>
       <h2 class="section-title">Start <em>digging</em></h2>
       <p class="section-desc">Three steps from clone to first extraction.</p>
-      <pre role="group" aria-label="Installation commands"><span class="copy-hint">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
+      <pre role="group" aria-label="Installation commands" tabindex="0"><span class="copy-hint">click to copy</span><span class="cli-comment"># clone &amp; enter</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">git clone https://github.com/adrianwedd/afterglow-engine.git</span>
 <span class="cli-prompt">$</span> <span class="cli-cmd">cd afterglow-engine</span>
 
@@ -670,8 +670,8 @@
 
     if (navigator.clipboard) {
       document.querySelectorAll('pre[role="group"]').forEach(pre => {
-        pre.addEventListener('click', () => {
-          const text = pre.textContent.replace(/click to copy/g, '').trim();
+        function doCopy() {
+          const text = pre.textContent.replace(/click to copy|copied!/g, '').trim();
           navigator.clipboard.writeText(text).then(() => {
             const hint = pre.querySelector('.copy-hint');
             if (hint) {
@@ -680,6 +680,10 @@
               setTimeout(() => { hint.textContent = 'click to copy'; copyFeedback.textContent = ''; }, 1500);
             }
           });
+        }
+        pre.addEventListener('click', doCopy);
+        pre.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); doCopy(); }
         });
       });
     } else {
